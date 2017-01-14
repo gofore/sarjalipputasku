@@ -26,6 +26,12 @@ export default {
   methods: {
     search: function () {
       // TODO send search parameters to backend
+      this.$http.get('/api/v1/routes').then((response) => {
+        // success callback
+        console.log(response);
+      }, (response) => {
+        // error callback
+      });
     }
   }
 }
