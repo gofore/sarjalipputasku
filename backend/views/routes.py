@@ -1,8 +1,9 @@
 from flask_restful import marshal_with, fields, Resource
-from flask import Blueprint, request
+from flask import Blueprint, request, abort, Response
 from datetime import datetime
 import pymongo
 
+from common import InvalidUsage
 from app import mongo
 
 
@@ -25,6 +26,9 @@ class RouteList(Resource):
     def get(self):
         src = request.args.get('src')
         dest = request.args.get('dest')
+        if not src or not dest:
+            raise InvalidUsage("src or dest parameter missing")
+
         now = datetime.now()
         available_tickets = mongo.db.tickets.find_one({
             '$or': [
