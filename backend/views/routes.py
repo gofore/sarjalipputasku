@@ -28,15 +28,15 @@ class RouteList(Resource):
         available_tickets = mongo.db.tickets.find_one({
             '$or': [
             {
-                'src': src,
-                'dest': dest,
+                'src': src.upper(),
+                'dest': dest.upper(),
                 'reserved': None,
                 'used': None,
                 'expiration_date': {'$gt': now}
             },
             {
-                'src': dest,
-                'dest': src,
+                'src': dest.upper(),
+                'dest': src.upper(),
                 'reserved': None,
                 'used': None,
                 'expiration_date': {'$gt': now}
