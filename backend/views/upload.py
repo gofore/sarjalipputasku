@@ -54,6 +54,8 @@ class UploadView(Resource):
                 'src': route[0],
                 'dest': route[1],
                 'qr': None,
+                'ticket_type': ticket_type,
+                'ticket_id': ticket_id,
                 'expiration_date': datetime.datetime.strptime(expires, '%d.%m.%Y') + end_of_day,
                 'reserved': None,
                 'used': None
