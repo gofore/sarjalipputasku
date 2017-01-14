@@ -1,15 +1,30 @@
 from flask_restful import marshal_with, fields, Resource
-from flask import Blueprint
+from flask import Blueprint, request
+from  flask_pymongo import PyMongo
+
+from app import app
+
+mongo = PyMongo(app)
+
+ticket = {
+	'src': fields.String,
+	'dest': fields.String,
+	'expiration_date': fields.DateTime,
+}
+
 route_fields = {
-    'src': fields.String,
-    'dest': fields.String,
-    'tickets': fields.List(fields.String)
+    'tickets': fields.List(fields.Nested(ticket))
 }
 
 routes = Blueprint('routes', __name__)
 
-
 class RouteList(Resource):
     @marshal_with(route_fields)
     def get(self):
-        return [{'src': 'a', 'dest': 'b', 'tickets': ['a1', 'a2']}]
+        available_tickets = mongo.db.tickets.find_one({
+            'src': request.args.get('src'),
+            'dest': request.args.get('dest'),
+            'reserved': None,
+            'used': None
+            })
+        return {'tickets': available_tickets}
