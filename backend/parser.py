@@ -34,11 +34,11 @@ def main(fname, outtype):
         html_doc = outfp.getvalue()
         soup = BeautifulSoup(html_doc, 'html.parser')
         spans = soup.find_all('span')
-        order_id = re.search("Tilausnumero:\W+(\d+)", spans[27].text).groups()
+        order_id = re.search("Tilausnumero:\W+(\d+)", soup.text).groups()
         print order_id
-        route = re.search("\d+ / \d+(.+) - (.*)Aikuinen", spans[7].text).groups()
-        ticket_id = re.search("- (.+) -", spans[15].text).groups()
-        ticket_type, expires = re.search("\d\d\.\d\d\.\d\d\d\d(.+)(\d\d\.\d\d\.\d\d\d\d)", spans[16].text).groups()
+        route = re.search("\d+ / \d+(.+) - (.*)Aikuinen", soup.text).groups()
+        ticket_id = re.search("- (.+) -", soup.text).groups()
+        ticket_type, expires = re.search("\d\d\.\d\d\.\d\d\d\d(.+)(\d\d\.\d\d\.\d\d\d\d)", soup.text).groups()
         print route, ticket_id, ticket_type, expires
         device.close()
     outfp.close()
