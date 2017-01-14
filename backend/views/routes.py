@@ -66,7 +66,7 @@ class RouteView(Resource):
             "_id": ObjectId(id),
         })
         if not ticket:
-            abort(204)
+            abort(409)
 
         if reserved_arg is not None:
             if reserved_arg and ticket.get('reserved') is not None:
