@@ -3,7 +3,7 @@
     <h2>Lippusi</h2>
     <span>{{ ticket.src }} - {{ ticket.dest }}</span><br />
     <span>{{ ticket.id }}</span><br />
-    Voimassa: <span>{{ new Date(ticket.expiration_date) }}</span>
+    Voimassa: <span>{{ formatDate(ticket.expiration_date) }}</span>
   </div>
 </template>
 
@@ -13,6 +13,12 @@ export default {
     ticket: {
       type: Object,
       required: true
+    }
+  },
+  methods: {
+    formatDate: function(timestamp) {
+      var date = new Date(timestamp);
+      return date.getDate() + '.' + (date.getMonth() + 1) + '.' + date.getFullYear();
     }
   }
 }
