@@ -63,7 +63,8 @@ class RouteView(Resource):
         reserved_arg = data.get('reserved')
         used_arg = data.get('used')
         if reserved_arg is None and used_arg is None:
-            abort(400)
+            raise InvalidUsage("reserved or used parameter missing")
+
         ticket = mongo.db.tickets.find_one({
             "_id": ObjectId(id),
         })
