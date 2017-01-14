@@ -7,6 +7,7 @@ from app import mongo
 
 
 ticket = {
+    'id': fields.String(attribute='_id'),
     'src': fields.String,
     'dest': fields.String,
     'expiration_date': fields.DateTime,
