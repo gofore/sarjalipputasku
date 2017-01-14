@@ -1,15 +1,13 @@
 from flask_restful import marshal_with, fields, Resource
 from flask import Blueprint, request
-from  flask_pymongo import PyMongo
 
-from app import app
+from app import mongo
 
-mongo = PyMongo(app)
 
 ticket = {
-	'src': fields.String,
-	'dest': fields.String,
-	'expiration_date': fields.DateTime,
+    'src': fields.String,
+    'dest': fields.String,
+    'expiration_date': fields.DateTime,
 }
 
 route_fields = {
@@ -17,6 +15,7 @@ route_fields = {
 }
 
 routes = Blueprint('routes', __name__)
+
 
 class RouteList(Resource):
     @marshal_with(route_fields)
@@ -26,5 +25,5 @@ class RouteList(Resource):
             'dest': request.args.get('dest'),
             'reserved': None,
             'used': None
-            })
+        })
         return {'tickets': available_tickets}

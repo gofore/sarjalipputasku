@@ -1,5 +1,6 @@
 from flask_restful import reqparse, Resource
 from flask import request, abort, Blueprint
+from flask_pymongo import PyMongo
 
 from pdfminer.pdfdocument import PDFDocument
 from pdfminer.pdfparser import PDFParser
@@ -9,10 +10,14 @@ from pdfminer.pdfpage import PDFPage
 from pdfminer.converter import XMLConverter, HTMLConverter, TextConverter
 from pdfminer.image import ImageWriter
 
+import datetime
 import werkzeug
 import re
 from bs4 import BeautifulSoup
 import StringIO
+
+from app import mongo
+
 upload = Blueprint('upload', __name__)
 
 
@@ -44,5 +49,14 @@ class UploadView(Resource):
             ticket_id = re.search("- (.+) -", spans[15].text).groups()
             ticket_type, expires = re.search("\d\d\.\d\d\.\d\d\d\d(.+)(\d\d\.\d\d\.\d\d\d\d)", spans[16].text).groups()
             print route, ticket_id, ticket_type, expires
+            end_of_day = datetime.timedelta(hours=23, minutes=59, seconds=59)
+            mongo.db.tickets.insert({
+                'src': route[0],
+                'dest': route[1],
+                'qr': None,
+                'expiration_date': datetime.datetime.strptime(expires, '%d.%m.%Y') + end_of_day,
+                'reserved': None,
+                'used': None
+            })
             device.close()
             outfp.close()
