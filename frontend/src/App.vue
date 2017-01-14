@@ -2,10 +2,14 @@
   <div id="app">
     <h1>{{ msg }}</h1>
     <form>
-      <label for="from">Mistä</label>
-      <input type="text" name="from" id="from" v-model="from"></input>
-      <label for="to">Minne</label>
-      <input type="text" name="to" id="to" v-model="to"></input>
+      <p>
+        <label for="from">Mistä</label><br />
+        <input type="text" name="from" id="from" v-model="from" />
+      </p>
+      <p>
+        <label for="to">Minne</label><br />
+        <input type="text" name="to" id="to" v-model="to" />
+      </p>
       <input type="button" name="submit" id="submit" value="Hae lippu" v-on:click="search"></input>
     </form>
   </div>
