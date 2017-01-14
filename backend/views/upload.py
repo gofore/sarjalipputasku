@@ -84,13 +84,15 @@ class UploadView(Resource):
                 print(route, ticket_id, ticket_type, expires)
                 hell_zone = timezone('Europe/Helsinki')
                 end_of_day = datetime.timedelta(hours=23, minutes=59, seconds=59)
+
                 qr_base64 = None
-                with open(qr_codes.next(), "rb") as image_file:
-                    qr_base64 = base64.b64encode(image_file.read())
+                if qr_codes:
+                    with open(qr_codes.next(), "rb") as image_file:
+                        qr_base64 = base64.b64encode(image_file.read())
                 mongo.db.tickets.insert({
                     'src': route[0],
                     'dest': route[1],
-                    'qr': qr_base64,
+                    'qr': 'data:image/png;base64,' + qr_base64,
                     'order_id': order_id,
                     'ticket_type': ticket_type,
                     'ticket_id': ticket_id,
