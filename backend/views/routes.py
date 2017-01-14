@@ -1,6 +1,7 @@
 from flask_restful import marshal_with, fields, Resource
 from flask import Blueprint, request
 from datetime import datetime
+import pymongo
 
 from app import mongo
 
@@ -23,6 +24,7 @@ class RouteList(Resource):
     def get(self):
         src = request.args.get('src')
         dest = request.args.get('dest')
+        now = datetime.now()
         available_tickets = mongo.db.tickets.find_one({
             '$or': [
             {
@@ -30,12 +32,16 @@ class RouteList(Resource):
                 'dest': dest,
                 'reserved': None,
                 'used': None,
+                'expiration_date': {'$gt': now}
             },
             {
                 'src': dest,
                 'dest': src,
                 'reserved': None,
                 'used': None,
+                'expiration_date': {'$gt': now}
             }
-        ]})
+        ]}, sort=
+            [('expiration_date', pymongo.ASCENDING)]
+        )
         return {'tickets': available_tickets}
