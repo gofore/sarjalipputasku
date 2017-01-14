@@ -13,6 +13,7 @@ ticket = {
     'src': fields.String,
     'dest': fields.String,
     'expiration_date': fields.DateTime(dt_format='iso8601'),
+    'qr': fields.String,
 }
 
 route_fields = {
