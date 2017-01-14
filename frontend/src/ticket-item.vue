@@ -14,12 +14,19 @@
       <span v-if="reservedOk">Varattu</span>
       <span v-if="reservedNok">Ei onnistunut. Hae uusi lippu.</span>
     </p>
-    <p v-if="reservedOk && !releasedOk">
-      <button v-on:click="releaseTicket(ticket.id)">Vapauta lippu</button>
+    <p v-if="reservedOk && !usedOk && !releasedOk">
+      <button v-on:click="releaseTicket(ticket.id)">Vapauta lippu (peru käyttö)</button>
     </p>
     <p>
       <span v-if="releasedOk">Vapautettu</span>
-      <span v-if="releasedNok">Ei onnistunut.</span>
+      <span v-if="releasedNok">Ei onnistunut</span>
+    </p>
+    <p v-if="reservedOk && !usedOk && !releasedOk">
+      <button v-on:click="useTicket(ticket.id)">Merkitse käytetyksi</button>
+    </p>
+    <p>
+      <span v-if="usedOk">Käytetty</span>
+      <span v-if="usedNok">Ei onnistunut</span>
     </p>
   </div>
 </template>
@@ -37,7 +44,9 @@ export default {
       reservedOk: false,
       reservedNok: false,
       releasedOk: false,
-      releasedNok: false
+      releasedNok: false,
+      usedOk: false,
+      usedNok: false
     }
   },
   methods: {
@@ -58,13 +67,25 @@ export default {
     },
     releaseTicket: function (id) {
       this.$http.put('/api/v1/routes/' + id, {
-        reserved: false
+        reserved: false,
+        used: false
       }).then((response) => {
         this.releasedOk = true;
         this.releasedNok = false;
       }, (response) => {
         this.releasedOk = false;
         this.releasedNok = true;
+      });
+    },
+    useTicket: function (id) {
+      this.$http.put('/api/v1/routes/' + id, {
+        used: true
+      }).then((response) => {
+        this.usedOk = true;
+        this.usedNok = false;
+      }, (response) => {
+        this.usedOk = false;
+        this.usedNok = true;
       });
     }
   }
