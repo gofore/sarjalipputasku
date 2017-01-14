@@ -4,7 +4,7 @@
     <form>
       <p>
         <label for="from">Mistä</label><br />
-        <input type="text" name="from" id="from" v-model="from" />
+        <input type="text" name="from" id="from" v-model="from" autofocus />
       </p>
       <p>
         <label for="to">Minne</label><br />
