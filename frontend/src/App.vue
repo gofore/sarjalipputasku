@@ -3,10 +3,10 @@
     <h1>{{ msg }}</h1>
     <form>
       <label for="from">Mistä</label>
-      <input type="text" name="from" id="from" placeholder="Mistä" :value="value" @input="onInput"></input>
+      <input type="text" name="from" id="from" :value="value" @input="onInput"></input>
       <label for="to">Minne</label>
-      <input type="text" name="to" id="to" placecholder="Minne"></input>
-      <input type="button" name="submit" id="submit" value="Hae lippu"></input>
+      <input type="text" name="to" id="to"></input>
+      <input type="button" name="submit" id="submit" value="Hae lippu" v-on:click="search"></input>
     </form>
   </div>
 </template>
@@ -17,6 +17,11 @@ export default {
   data () {
     return {
       msg: 'Sarjalipputasku'
+    }
+  },
+  methods () {
+    search: function() {
+      // TODO send search parameters to backend
     }
   }
 }
