@@ -2,8 +2,8 @@
   <div>
     <h2>Lippusi</h2>
     <span>{{ ticket.src }} - {{ ticket.dest }}</span><br />
-    <span>{{ ticket.id }}</span><br />
-    Voimassa: <span>{{ formatDate(ticket.expiration_date) }}</span>
+    Voimassa: <span>{{ formatDate(ticket.expiration_date) }}</span><br />
+    <span>{{ ticket.vr_id }}</span><br />
     <p>
       <img v-bind:src="ticket.qr" />
     </p>
