@@ -1,5 +1,6 @@
 from flask_restful import marshal_with, fields, Resource
 from flask import Blueprint, request
+from datetime import datetime
 
 from app import mongo
 
@@ -20,10 +21,21 @@ routes = Blueprint('routes', __name__)
 class RouteList(Resource):
     @marshal_with(route_fields)
     def get(self):
+        src = request.args.get('src')
+        dest = request.args.get('dest')
         available_tickets = mongo.db.tickets.find_one({
-            'src': request.args.get('src'),
-            'dest': request.args.get('dest'),
-            'reserved': None,
-            'used': None
-        })
+            '$or': [
+            {
+                'src': src,
+                'dest': dest,
+                'reserved': None,
+                'used': None,
+            },
+            {
+                'src': dest,
+                'dest': src,
+                'reserved': None,
+                'used': None,
+            }
+        ]})
         return {'tickets': available_tickets}
