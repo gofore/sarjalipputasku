@@ -4,7 +4,9 @@
     <span>{{ ticket.src }} - {{ ticket.dest }}</span><br />
     <span>{{ ticket.id }}</span><br />
     Voimassa: <span>{{ formatDate(ticket.expiration_date) }}</span>
-    <img v-bind:src="ticket.qr" />
+    <p>
+      <img v-bind:src="ticket.qr" />
+    </p>
     <p v-if="!reservedOk">
       <button v-on:click="reserveTicket(ticket.id)">Varaa lippu</button>
     </p>
