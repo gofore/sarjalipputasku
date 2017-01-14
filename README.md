@@ -9,10 +9,12 @@ Matkalipputasku VR:n sarjalipuille
     - Määränpäät
     - Luokka
     - Vanheneminen
-  - Lippujen haku
+- Lippujen haku
     - Lähtö- ja kohdeasemilla
-    - Lipputyypilla (eko/ekstra)
-    - Liput järjestettynä vanhemispäivämäärän mukaan
-  - Lipun varaaminen ja vapautuminen/käyttäminen
-    - Vapauta varattu lippu ajastetusti
-  
+    - Myöhempiin versioihin: voimassaoloajalla, lipputyypillä (eko/ekstra)
+    - Haku palauttaa yhden hakuehtoihin sopivan lipun
+- Lipun varaaminen
+    - Lippu merkitään varatuksi, kun haku palauttaa sen
+- Lipun käyttäminen
+    - Käyttäjä voi merkitä lipun käytetyksi
+- Myöhempiin versioihin: varauksen peruuttaminen
