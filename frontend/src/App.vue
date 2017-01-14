@@ -12,14 +12,29 @@
       </p>
       <input type="button" name="submit" id="submit" value="Hae lippu" v-on:click="search"></input>
     </form>
+
+    <div>
+      <ticket-item
+        v-for="ticket in tickets"
+        :ticket="ticket"
+        :key="ticket.id"
+        />
+    </div>
+
   </div>
 </template>
 
 <script>
+import TicketItem from './ticket-item.vue';
+
 export default {
   name: 'app',
+  components: {
+    TicketItem
+  },
   data () {
     return {
+      tickets: [],
       msg: 'Sarjalipputasku'
     }
   },
@@ -34,8 +49,10 @@ export default {
       }).then((response) => {
         // success callback
         console.log(response);
+        this.tickets = response.body.tickets;
       }, (response) => {
         // error callback
+        this.tickets = [];
       });
     }
   }
