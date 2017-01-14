@@ -21,6 +21,9 @@
         />
     </div>
 
+  <h1>Lataa sarjalippu</h1>
+  <p><input type="file" @change="upload"></p>
+
   </div>
 </template>
 
@@ -48,13 +51,25 @@ export default {
         }
       }).then((response) => {
         // success callback
-        console.log(response);
+//        console.log(response);
         this.tickets = response.body.tickets;
       }, (response) => {
         // error callback
         this.tickets = [];
       });
-    }
+    },
+    upload: function (e) {
+      var files = e.target.files || e.dataTransfer.files;
+      if (!files.length)
+        return;
+      this.$http.post('/api/v1/upload', files[0]
+        ).then((response) => {
+          console.log('success');
+        }, (response) => {
+          console.log('error');
+      });
+//      this.createImage(files[0]);
+    },
   }
 }
 </script>
