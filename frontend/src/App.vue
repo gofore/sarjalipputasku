@@ -23,6 +23,7 @@
 
   <h1>Lataa sarjalippu</h1>
   <p><input type="file" @change="upload"></p>
+  <p>{{ uploadMessage }}</p>
 
   </div>
 </template>
@@ -38,12 +39,12 @@ export default {
   data () {
     return {
       tickets: [],
-      msg: 'Sarjalipputasku'
+      msg: 'Sarjalipputasku',
+      uploadMessage: ""
     }
   },
   methods: {
     search: function () {
-      // TODO send search parameters to backend
       this.$http.get('/api/v1/routes', {
         params: {
           src: from.value,
@@ -51,24 +52,25 @@ export default {
         }
       }).then((response) => {
         // success callback
-//        console.log(response);
         this.tickets = response.body.tickets;
       }, (response) => {
         // error callback
         this.tickets = [];
       });
     },
-    upload: function (e) {
+    upload(e) {
       var files = e.target.files || e.dataTransfer.files;
       if (!files.length)
         return;
-      this.$http.post('/api/v1/upload', files[0]
-        ).then((response) => {
-          console.log('success');
-        }, (response) => {
-          console.log('error');
+
+      var formData = new FormData();
+      formData.append('file', files[0]);
+
+      this.$http.post('/api/v1/upload', formData).then((response) => {
+        this.uploadMessage = "Lataus onnistui";
+      }, (response) => {
+        this.uploadMessage = "Lataus epäonnistui";
       });
-//      this.createImage(files[0]);
     },
   }
 }
