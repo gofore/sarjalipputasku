@@ -17,7 +17,7 @@ import StringIO
 import os
 
 from app import mongo
-
+from common import InvalidUsage
 upload = Blueprint('upload', __name__)
 
 
@@ -46,7 +46,7 @@ class UploadView(Resource):
             for page in PDFPage.get_pages(fd):
                 outfp = StringIO.StringIO()
                 rsrcmgr = PDFResourceManager(caching=False)
-                device = HTMLConverter(rsrcmgr, outfp, imagewriter=ImageWriter('out'))
+                device = HTMLConverter(rsrcmgr, outfp)
                 interpreter = PDFPageInterpreter(rsrcmgr, device)
                 interpreter.process_page(page)
                 html_doc = outfp.getvalue()
@@ -70,8 +70,8 @@ class UploadView(Resource):
                 print("tmp_dir: " + tmp_dir)
                 if not unique_ticket_order:
                     ticket_count = mongo.db.tickets.find({"order_id": order_id}).count()
-                    if ticket_count: pass
-                        # abort(422)
+                    if ticket_count:
+                        raise InvalidUsage("Ticket already uploaded", status_code=400)
                     try:
                         os.popen('pdfimages -png ' + tmp_src_file + ' ' + tmp_dir + '/out')
                         ims = os.popen("ls " + tmp_dir + "/out*").read().split()
@@ -85,10 +85,12 @@ class UploadView(Resource):
                 hell_zone = timezone('Europe/Helsinki')
                 end_of_day = datetime.timedelta(hours=23, minutes=59, seconds=59)
 
-                qr_base64 = None
-                if qr_codes:
+                qr_base64 = ''
+                try:
                     with open(qr_codes.next(), "rb") as image_file:
                         qr_base64 = base64.b64encode(image_file.read())
+                except:
+                    pass
                 mongo.db.tickets.insert({
                     'src': route[0],
                     'dest': route[1],
