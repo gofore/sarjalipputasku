@@ -17,4 +17,6 @@ Matkalipputasku VR:n sarjalipuille
     - Lippu merkitään varatuksi, kun haku palauttaa sen
 - Lipun käyttäminen
     - Käyttäjä voi merkitä lipun käytetyksi
-- Myöhempiin versioihin: varauksen peruuttaminen
+- Myöhempiin versioihin: 
+    - varauksen peruuttaminen
+    - Älykäs haku
