@@ -1,9 +1,18 @@
 from flask_restful import reqparse, Resource
-from flask import abort, Blueprint
+from flask import request, abort, Blueprint
 
-import logging
+from pdfminer.pdfdocument import PDFDocument
+from pdfminer.pdfparser import PDFParser
+from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+from pdfminer.pdfdevice import PDFDevice, TagExtractor
+from pdfminer.pdfpage import PDFPage
+from pdfminer.converter import XMLConverter, HTMLConverter, TextConverter
+from pdfminer.image import ImageWriter
+
 import werkzeug
-
+import re
+from bs4 import BeautifulSoup
+import StringIO
 upload = Blueprint('upload', __name__)
 
 
@@ -14,13 +23,26 @@ class UploadView(Resource):
     def post(self):
         parser = reqparse.RequestParser()
         parser.add_argument('file', type=werkzeug.datastructures.FileStorage, location='files')
-
         args = parser.parse_args()
+        print "args", args
         if 'file' not in args:
             abort(422)
 
-        try:
-            print args['file']  # .read()
-        except Exception as e:
-            abort(422)
-            logging.warn(e)
+        # Danger Zone, parsing PDF files is dirty and this one definately ain't
+        # the prettiest creature alive. Cleanse yourself with strong liqueur
+        # afterwards.
+        for page in PDFPage.get_pages(args['file']):
+            outfp = StringIO.StringIO()
+            rsrcmgr = PDFResourceManager(caching=False)
+            device = HTMLConverter(rsrcmgr, outfp, imagewriter=ImageWriter('out'))
+            interpreter = PDFPageInterpreter(rsrcmgr, device)
+            interpreter.process_page(page)
+            html_doc = outfp.getvalue()
+            soup = BeautifulSoup(html_doc, 'html.parser')
+            spans = soup.find_all('span')
+            route = re.search("\d+ / \d+(.+) - (.*)Aikuinen", spans[7].text).groups()
+            ticket_id = re.search("- (.+) -", spans[15].text).groups()
+            ticket_type, expires = re.search("\d\d\.\d\d\.\d\d\d\d(.+)(\d\d\.\d\d\.\d\d\d\d)", spans[16].text).groups()
+            print route, ticket_id, ticket_type, expires
+            device.close()
+            outfp.close()
