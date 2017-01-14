@@ -3,7 +3,7 @@ Matkalipputasku VR:n sarjalipuille
 
 
 # Ominaisuukset
- - Sarjalipun upload
+- Sarjalipun upload
   - Pyynnön käsittely
   - Lipun parsinta
     - Määränpäät
