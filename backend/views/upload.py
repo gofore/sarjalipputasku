@@ -85,7 +85,7 @@ class UploadView(Resource):
                 hell_zone = timezone('Europe/Helsinki')
                 end_of_day = datetime.timedelta(hours=23, minutes=59, seconds=59)
 
-                qr_base64 = None
+                qr_base64 = ''
                 try:
                     with open(qr_codes.next(), "rb") as image_file:
                         qr_base64 = base64.b64encode(image_file.read())
