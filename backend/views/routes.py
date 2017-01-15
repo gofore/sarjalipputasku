@@ -1,10 +1,10 @@
 from flask_restful import marshal_with, fields, Resource
-from flask import Blueprint, request, abort, Response
+from flask import Blueprint, abort, request
 from datetime import datetime
 from bson.objectid import ObjectId
 import pymongo
 
-from common import InvalidUsage
+from common import InvalidUsage, auth
 from app import mongo
 
 
@@ -25,12 +25,13 @@ routes = Blueprint('routes', __name__)
 
 
 class RouteList(Resource):
+    @auth.login_required
     @marshal_with(route_fields)
     def get(self):
         src = request.args.get('src')
         dest = request.args.get('dest')
         if not src or not dest:
-            raise InvalidUsage("src or dest parameter missing")
+            return
 
         now = datetime.now()
         available_tickets = mongo.db.tickets.find_one({
@@ -49,15 +50,13 @@ class RouteList(Resource):
                 'used': None,
                 'expiration_date': {'$gt': now}
             }
-        ]}, sort=
-            [('expiration_date', pymongo.ASCENDING)]
+        ]}, sort=[('expiration_date', pymongo.ASCENDING)]
         )
         return {'tickets': available_tickets}
 
-class RouteView(Resource):
-    def get(self, id):
-        return "Only PUT here!"
 
+class RouteView(Resource):
+    @auth.login_required
     def put(self, id):
         data = request.get_json(force=True)
         reserved_arg = data.get('reserved')

@@ -1,106 +1,35 @@
-<template>
-  <div id="app">
-    <h1>{{ msg }}</h1>
-    <form>
-      <p>
-        <label for="from">Mistä</label><br />
-        <input type="text" name="from" id="from" v-model="from" autofocus />
-      </p>
-      <p>
-        <label for="to">Minne</label><br />
-        <input type="text" name="to" id="to" v-model="to" />
-      </p>
-      <input type="button" name="submit" id="submit" value="Hae lippu" v-on:click="search"></input>
-    </form>
-
-    <div>
-      <ticket-item
-        v-for="ticket in tickets"
-        :ticket="ticket"
-        :key="ticket.id"
-        />
-    </div>
-
-  <h1>Lataa sarjalippu</h1>
-  <p><input type="file" @change="upload"></p>
-  <p>{{ uploadMessage }}</p>
-
-  </div>
+ <template>
+	<div id="app">
+		<h1>Sarjalipputasku</h1>
+		<nav class="navbar navbar-default">
+			<div class="container">
+				<ul class="nav nav-justified">
+					<li><router-link to="/" v-if="user.authenticated" class="btn btn-lg">Lippuhaku</router-link></li>
+					<li><router-link to="/upload" v-if="user.authenticated" class="btn btn-lg">Lisää sarjalippu</router-link></li>
+					<li><a v-link="{ path: '/login'}" v-if="user.authenticated" @click="logout()" class="btn btn-lg" >Kirjaudu ulos</a></li>
+				</ul>
+			</div>    
+		</nav>
+		<div class="container">
+			<router-view></router-view>
+		</div>
+	</div>
 </template>
 
 <script>
-import TicketItem from './ticket-item.vue';
 
+import auth from './auth'
 export default {
-  name: 'app',
-  components: {
-    TicketItem
-  },
-  data () {
-    return {
-      tickets: [],
-      msg: 'Sarjalipputasku',
-      uploadMessage: ""
-    }
-  },
-  methods: {
-    search: function () {
-      this.$http.get('/api/v1/routes', {
-        params: {
-          src: from.value,
-          dest: to.value
-        }
-      }).then((response) => {
-        // success callback
-        this.tickets = response.body.tickets;
-      }, (response) => {
-        // error callback
-        this.tickets = [];
-      });
-    },
-    upload(e) {
-      var files = e.target.files || e.dataTransfer.files;
-      if (!files.length)
-        return;
+	data() {
 
-      var formData = new FormData();
-      formData.append('file', files[0]);
-
-      this.$http.post('/api/v1/upload', formData).then((response) => {
-        this.uploadMessage = "Lataus onnistui";
-      }, (response) => {
-        this.uploadMessage = "Lataus epäonnistui";
-      });
-    },
-  }
+		return {
+			user: auth.user
+		}
+	},
+	methods: {
+		logout() {
+			auth.logout()
+		}
+	}
 }
 </script>
-
-<style>
-#app {
-  font-family: 'Avenir', Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
-
-h1, h2 {
-  font-weight: normal;
-}
-
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-li {
-  display: inline-block;
-  margin: 0 10px;
-}
-
-a {
-  color: #42b983;
-}
-</style>

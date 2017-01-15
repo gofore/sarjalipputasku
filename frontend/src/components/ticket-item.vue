@@ -32,6 +32,7 @@
 </template>
 
 <script>
+import auth from '../auth'
 export default {
   props: {
     ticket: {
@@ -57,7 +58,10 @@ export default {
     reserveTicket: function (id) {
       this.$http.put('/api/v1/routes/' + id, {
         reserved: true
-      }).then((response) => {
+      }, {
+        headers: auth.getAuthHeader()
+      }
+      ).then((response) => {
         this.reservedOk = true;
         this.reservedNok = false;
       }, (response) => {
@@ -69,6 +73,8 @@ export default {
       this.$http.put('/api/v1/routes/' + id, {
         reserved: false,
         used: false
+      }, {
+        headers: auth.getAuthHeader()
       }).then((response) => {
         this.releasedOk = true;
         this.releasedNok = false;
@@ -80,6 +86,8 @@ export default {
     useTicket: function (id) {
       this.$http.put('/api/v1/routes/' + id, {
         used: true
+      }, {
+        headers: auth.getAuthHeader()
       }).then((response) => {
         this.usedOk = true;
         this.usedNok = false;

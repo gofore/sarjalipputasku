@@ -4,7 +4,6 @@ from flask import abort, Blueprint
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.pdfpage import PDFPage
 from pdfminer.converter import HTMLConverter
-from pdfminer.image import ImageWriter
 
 import base64
 import datetime
@@ -17,14 +16,12 @@ import StringIO
 import os
 
 from app import mongo
-from common import InvalidUsage
+from common import InvalidUsage, auth
 upload = Blueprint('upload', __name__)
 
 
 class UploadView(Resource):
-    def get(self):
-        return "only POST here"
-
+    @auth.login_required
     def post(self):
         parser = reqparse.RequestParser()
         parser.add_argument('file', type=werkzeug.datastructures.FileStorage, location='files')

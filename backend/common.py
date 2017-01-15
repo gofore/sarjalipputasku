@@ -1,3 +1,25 @@
+from flask.ext.httpauth import HTTPTokenAuth
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+from app import app
+import logging
+
+auth = HTTPTokenAuth('Bearer')
+auth.authenticate_header = lambda: "Authentication Required"
+
+
+@auth.verify_token
+def verify_password(token):
+    s = Serializer(app.config['SECRET_KEY'])
+    logging.warn("token:" + token)
+    try:
+        s.loads(token)
+    except Exception, e:
+        logging.error("Verifying token error")
+        logging.error(e)
+        return False
+    return True
+
+
 class InvalidUsage(Exception):
     status_code = 400
 
