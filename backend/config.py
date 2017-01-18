@@ -3,3 +3,4 @@ class BaseConfig(object):
     WTF_CSRF_ENABLED = False
     SECRET_KEY = "secret key, change me"
     MONGO_DBNAME = "test"
+    DUMMY_AUTHENTICATION = False

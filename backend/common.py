@@ -1,4 +1,4 @@
-from flask.ext.httpauth import HTTPTokenAuth
+from flask_httpauth import HTTPTokenAuth
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from app import app
 import logging

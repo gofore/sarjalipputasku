@@ -6,7 +6,7 @@
 				<ul class="nav nav-justified">
 					<li><router-link to="/" v-if="user.authenticated" class="btn btn-lg">Lippuhaku</router-link></li>
 					<li><router-link to="/upload" v-if="user.authenticated" class="btn btn-lg">Lisää sarjalippu</router-link></li>
-					<li><a v-link="{ path: '/login'}" v-if="user.authenticated" @click="logout()" class="btn btn-lg" >Kirjaudu ulos</a></li>
+					<li><a v-if="user.authenticated" @click="logout()" class="btn btn-lg" >Kirjaudu ulos</a></li>
 				</ul>
 			</div>    
 		</nav>

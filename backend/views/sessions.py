@@ -20,7 +20,10 @@ class SessionView(Resource):
         if not form.validate_on_submit():
             return form.errors, 422
 
-        con = ldap.initialize('ldap://gofdir3.intra.gofore.com')
+        if app.config['DUMMY_AUTHENTICATION']:
+            return self.token_with_email('test@example.org')
+
+        con = ldap.initialize(app.config['LDAP_URL'])
         con.start_tls_s()
         try:
             con.simple_bind_s(form.email.data, form.password.data)
@@ -29,9 +32,13 @@ class SessionView(Resource):
                 'message': 'Unauthorized',
                 'status': 401
             }, 401
+
+        return self.token_with_email(self.email.data)
+
+    def token_with_email(self, email):
         s = Serializer(app.config['SECRET_KEY'], expires_in=3600)
-        token = s.dumps({'user': form.email.data}).decode('utf-8')
+        token = s.dumps({'user': email}).decode('utf-8')
         return marshal({
             'token': token,
-            'user': form.email.data
+            'user': email
         }, token_fields)

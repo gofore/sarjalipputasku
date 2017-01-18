@@ -10,9 +10,16 @@ import auth from './auth'
 Vue.use(VueResource);
 Vue.use(VueRouter)
 
-const Foo = { template: '<div>foo</div>' }
+Vue.http.interceptors.push((request, next) => {
+    console.log(request)
+		next((response) => {
+			if (response.status === 401) {
+				auth.logout()			
+			}
+  })
+})
 
-export var router = new VueRouter({
+var router = new VueRouter({
 	routes: [
 	  { path: '/login',  component: Login },
 		{ path: '/', 
@@ -40,7 +47,4 @@ const app = new Vue({
 
 auth.isAuthenticated()
 
-//new Vue({
-//  el: '#app',
-//  render: h => h(App)
-//})
+export default router

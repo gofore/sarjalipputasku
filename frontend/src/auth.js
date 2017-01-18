@@ -1,4 +1,6 @@
+import router from './main'
 const LOGIN_URL = '/api/v1/login'
+
 export default {
   user: {
     authenticated: false
@@ -8,8 +10,9 @@ export default {
 			(data) => {
 				localStorage.setItem('token', data.body.token)
 				this.user.authenticated = true
+				console.log("authenticated")
 				if(redirect) {
-					router.go(redirect)
+					router.push(redirect)
 				}
 			},
 			(err) => {
@@ -19,6 +22,7 @@ export default {
 	logout() {
     localStorage.removeItem('token')
     this.user.authenticated = false
+		router.push('/login')
   },
 	isAuthenticated() {
     var jwt = localStorage.getItem('token')

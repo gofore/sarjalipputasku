@@ -1,15 +1,19 @@
 <template>
   <div>
-    <form>
-      <p>
-        <label for="from">Mistä</label><br />
-        <input type="text" name="from" id="from" v-model="from" autofocus />
-      </p>
-      <p>
-        <label for="to">Minne</label><br />
-        <input type="text" name="to" id="to" v-model="to" />
-      </p>
-      <input type="button" name="submit" id="submit" value="Hae lippu" v-on:click="search"></input>
+    <form class="form-horizontal">
+      <div class="form-group">
+        <label class="col-sm-2 control-label" for="from">Mistä</label>
+        <div class="col-sm-10">
+          <input type="text" class="form-control" name="from" id="from" v-model="from" autofocus />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="col-sm-2 control-label" for="to">Minne</label>
+        <div class="col-sm-10">
+          <input type="text" class="form-control" name="to" id="to" v-model="to" />
+        </div>
+      </div>
+      <input type="button" class="btn btn-primary" name="submit" id="submit" value="Hae lippu" v-on:click="search"></input>
     </form>
 
     <div>
