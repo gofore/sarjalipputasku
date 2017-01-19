@@ -1,5 +1,5 @@
 from flask_restful import marshal_with, fields, Resource
-from flask import Blueprint, abort, request
+from flask import Blueprint, abort, request, g
 from datetime import datetime
 from bson.objectid import ObjectId
 import pymongo
@@ -13,7 +13,11 @@ ticket = {
     'src': fields.String,
     'dest': fields.String,
     'expiration_date': fields.DateTime(dt_format='iso8601'),
+    'price': fields.Float,
     'qr': fields.String,
+    'order_id': fields.String,
+    'reserved': fields.DateTime(dt_format='iso8601'),
+    'used': fields.DateTime(dt_format='iso8601'),
     'vr_id': fields.String(attribute='ticket_id'),
 }
 
@@ -90,6 +94,7 @@ class RouteView(Resource):
             {"_id": ObjectId(id)},
             {
                 '$set': {
+                    "updated_by": g.current_user,
                     "used": used_state,
                     "reserved": reserved_state,
                 },

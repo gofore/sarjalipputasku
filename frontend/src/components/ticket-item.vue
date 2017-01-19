@@ -3,30 +3,26 @@
     <h2>Lippusi</h2>
     <span>{{ ticket.src }} - {{ ticket.dest }}</span><br />
     Voimassa: <span>{{ formatDate(ticket.expiration_date) }}</span><br />
+    Hinta: <span>{{ ticket.price }} &euro; (alv 0%)</span><br />
     <span>{{ ticket.vr_id }}</span><br />
     <p>
       <img v-bind:src="ticket.qr" />
     </p>
-    <p v-if="!reservedOk">
-      <button v-on:click="reserveTicket(ticket.id)">Varaa lippu</button>
+    <p>
+      <span v-if="error">{{ error }}</span>
+    </p>
+    <p v-if="!reserved">
+      <button class="btn btn-default" v-on:click="reserveTicket(ticket.id)">Varaa lippu</button>
     </p>
     <p>
-      <span v-if="reservedOk">Varattu</span>
-      <span v-if="reservedNok">Ei onnistunut. Hae uusi lippu.</span>
+      <span v-if="reserved && !used">Varattu</span>
+      <span v-if="used">Käytetty</span>
     </p>
-    <p v-if="reservedOk && !usedOk && !releasedOk">
-      <button v-on:click="releaseTicket(ticket.id)">Vapauta lippu (peru käyttö)</button>
+    <p v-if="reserved && !used">
+      <button class="btn btn-warning" v-on:click="releaseTicket(ticket.id)">Vapauta lippu (peru käyttö)</button>
     </p>
-    <p>
-      <span v-if="releasedOk">Vapautettu</span>
-      <span v-if="releasedNok">Ei onnistunut</span>
-    </p>
-    <p v-if="reservedOk && !usedOk && !releasedOk">
-      <button v-on:click="useTicket(ticket.id)">Merkitse käytetyksi</button>
-    </p>
-    <p>
-      <span v-if="usedOk">Käytetty</span>
-      <span v-if="usedNok">Ei onnistunut</span>
+    <p v-if="reserved && !used">
+      <button class="btn btn-success" v-on:click="useTicket(ticket.id)">Merkitse käytetyksi</button>
     </p>
   </div>
 </template>
@@ -42,12 +38,8 @@ export default {
   },
   data () {
     return {
-      reservedOk: false,
-      reservedNok: false,
-      releasedOk: false,
-      releasedNok: false,
-      usedOk: false,
-      usedNok: false
+      reserved: false,
+      used: false,
     }
   },
   methods: {
@@ -58,42 +50,30 @@ export default {
     reserveTicket: function (id) {
       this.$http.put('/api/v1/routes/' + id, {
         reserved: true
-      }, {
-        headers: auth.getAuthHeader()
-      }
-      ).then((response) => {
-        this.reservedOk = true;
-        this.reservedNok = false;
+      }).then((response) => {
+        this.reserved = true;
       }, (response) => {
-        this.reservedOk = false;
-        this.reservedNok = true;
+        console.log("error")
+        this.error = 'Lipun varaaminen ei onnistunut';
       });
     },
     releaseTicket: function (id) {
       this.$http.put('/api/v1/routes/' + id, {
         reserved: false,
         used: false
-      }, {
-        headers: auth.getAuthHeader()
       }).then((response) => {
-        this.releasedOk = true;
-        this.releasedNok = false;
+        this.reserved = undefined;
       }, (response) => {
-        this.releasedOk = false;
-        this.releasedNok = true;
+        this.error = 'Lipun vapauttaminen ei onnistunut';
       });
     },
     useTicket: function (id) {
       this.$http.put('/api/v1/routes/' + id, {
         used: true
-      }, {
-        headers: auth.getAuthHeader()
       }).then((response) => {
-        this.usedOk = true;
-        this.usedNok = false;
+        this.used = true;
       }, (response) => {
-        this.usedOk = false;
-        this.usedNok = true;
+        this.error = 'Lipun merkitseminen käytetyksi ei onnistunut';
       });
     }
   }

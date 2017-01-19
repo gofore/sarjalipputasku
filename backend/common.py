@@ -1,3 +1,4 @@
+from flask import g
 from flask_httpauth import HTTPTokenAuth
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from app import app
@@ -8,13 +9,12 @@ auth.authenticate_header = lambda: "Authentication Required"
 
 
 @auth.verify_token
-def verify_password(token):
+def verify_token(token):
     s = Serializer(app.config['SECRET_KEY'])
-    logging.warn("token:" + token)
     try:
-        s.loads(token)
+        token = s.loads(token)
+        g.current_user = token['user']
     except Exception, e:
-        logging.error("Verifying token error")
         logging.error(e)
         return False
     return True

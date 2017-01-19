@@ -5,13 +5,14 @@ import App from './App.vue'
 import Login from './components/Login.vue'
 import Upload from './components/Upload.vue'
 import Search from './components/Search.vue'
+import MyTickets from './components/MyTickets.vue'
 import auth from './auth'
 
 Vue.use(VueResource);
 Vue.use(VueRouter)
 
 Vue.http.interceptors.push((request, next) => {
-    console.log(request)
+    request.headers.set('Authorization', auth.getAuthorizationHeader())
 		next((response) => {
 			if (response.status === 401) {
 				auth.logout()			
@@ -21,11 +22,12 @@ Vue.http.interceptors.push((request, next) => {
 
 var router = new VueRouter({
 	routes: [
-	  { path: '/login',  component: Login },
 		{ path: '/', 
 			component: Search, 
 			meta: { auth: true }
-		},
+    },
+    { path: '/mytickets', component: MyTickets },
+	  { path: '/login',  component: Login },
  		{ path: '/upload',
 			component: Upload,
 			meta: { auth: true }

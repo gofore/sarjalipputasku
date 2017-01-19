@@ -10,7 +10,6 @@ export default {
 			(data) => {
 				localStorage.setItem('token', data.body.token)
 				this.user.authenticated = true
-				console.log("authenticated")
 				if(redirect) {
 					router.push(redirect)
 				}
@@ -34,10 +33,8 @@ export default {
     }
 		return this.user.authenticated
   },
-	getAuthHeader() {
-    return {
-      'Authorization': 'Bearer ' + localStorage.getItem('token')
-    }
+	getAuthorizationHeader() {
+    return 'Bearer ' + localStorage.getItem('token')
   }
 }
 

@@ -5,6 +5,7 @@
 			<div class="container">
 				<ul class="nav nav-justified">
 					<li><router-link to="/" v-if="user.authenticated" class="btn btn-lg">Lippuhaku</router-link></li>
+					<li><router-link to="/mytickets" v-if="user.authenticated" class="btn btn-lg">Omat liput</router-link></li>
 					<li><router-link to="/upload" v-if="user.authenticated" class="btn btn-lg">Lisää sarjalippu</router-link></li>
 					<li><a v-if="user.authenticated" @click="logout()" class="btn btn-lg" >Kirjaudu ulos</a></li>
 				</ul>

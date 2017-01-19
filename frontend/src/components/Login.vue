@@ -7,6 +7,7 @@
           class="form-control"
           placeholder="Käyttäjä"
           v-model="credentials.username"
+          v-on:keyup.enter="login"
         >
       </div>
       <div class="form-group">
@@ -15,6 +16,7 @@
           class="form-control"
           placeholder="Salasana"
           v-model="credentials.password"
+          v-on:keyup.enter="login"
         >
       </div>
       <button class="btn btn-primary" @click="login()">Sisään</button>
@@ -38,7 +40,7 @@
           email: this.credentials.username,
           password: this.credentials.password
         }
-        auth.login(this, credentials, 'search')
+        auth.login(this, credentials, '/')
       }
     }
   }

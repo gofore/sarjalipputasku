@@ -33,6 +33,7 @@ def main(fname, outtype):
         interpreter.process_page(page)
         html_doc = outfp.getvalue()
         soup = BeautifulSoup(html_doc, 'html.parser')
+        print soup
         spans = soup.find_all('span')
         order_id = re.search("Tilausnumero:\W+(\d+)", soup.text).groups()
         print order_id

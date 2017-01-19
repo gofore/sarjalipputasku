@@ -25,6 +25,9 @@ export default {
       this.$http.post('/api/v1/upload', formData).then((response) => {
         this.uploadMessage = "Lataus onnistui";
       }, (response) => {
+        if (response.status === 422) {
+          this.uploadMessage = "Lataus epäonnistu (sarjalippua ei voitu jäsentää)";
+        }
         this.uploadMessage = "Lataus epäonnistui";
       });
     }
