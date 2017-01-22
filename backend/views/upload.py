@@ -6,16 +6,16 @@ from pdfminer.pdfpage import PDFPage
 from pdfminer.converter import HTMLConverter
 
 import base64
-import datetime
 import werkzeug
 import tempfile
+import uuid
 import re
-from pytz import timezone
+import arrow
 from bs4 import BeautifulSoup
 import StringIO
 import os
 
-from app import mongo
+from models import db, Ticket
 from common import InvalidUsage, auth
 upload = Blueprint('upload', __name__)
 
@@ -92,13 +92,13 @@ class UploadView(Resource):
         tmp_src_file = tmp_dir + '/in.pdf'
         with file(tmp_src_file, 'wb') as fd:
             fd.write(args['file'].read())
-
+
         pages = self.get_pages(tmp_src_file)
         if not pages:
             abort(422)
 
         first_page = pages[0]
-        ticket_count = mongo.db.tickets.find({"order_id": self.get_order_id(first_page)}).count()
+        ticket_count = Ticket.query.filter_by(order_id=self.get_order_id(first_page)).count()
 
         qr_codes = iter([])
         if ticket_count:
@@ -110,27 +110,23 @@ class UploadView(Resource):
         except:
             print("XXX: No poppler installed, unable to produce 2D barcodes")
 
-        tickets = []
         for page in pages:
             route = self.get_route(page)
             ticket_type, expires = self.get_ticket_type_and_expiration(page)
-            hell_zone = timezone('Europe/Helsinki')
-            end_of_day = datetime.timedelta(hours=23, minutes=59, seconds=59)
             qr_base64 = self.base64_encode_qrcode(qr_codes.next())
-            tickets.append({
-                'src': route[0],
-                'dest': route[1],
-                'price': self.get_price(page) / len(pages),
-                'qr': 'data:image/png;base64,' + qr_base64,
-                'order_id': self.get_order_id(page),
-                'ticket_type': ticket_type,
-                'ticket_id': self.get_ticket_id(page),
-                'expiration_date': hell_zone.localize(datetime.datetime.strptime(expires, '%d.%m.%Y') + end_of_day),
-                'uploaded': hell_zone.localize(datetime.datetime.now()),
-                'uploaded_by': g.current_user,
-                'reserved': None,
-                'used': None
-            })
-
-        for ticket in tickets:
-            mongo.db.tickets.insert(ticket)
+            ticket = Ticket()
+            ticket.id = uuid.uuid4().hex
+            ticket.src = route[0].upper()
+            ticket.dest = route[1].upper()
+            ticket.price = self.get_price(page) / len(pages)
+            ticket.qr = 'data:image/png;base64,' + qr_base64
+            ticket.order_id = self.get_order_id(page)
+            ticket.ticket_type = ticket_type
+            ticket.ticket_id = self.get_ticket_id(page)
+            ticket.expiration_date = arrow.get(expires, 'DD.MM.YYYY').to('Europe/Helsinki').ceil('day').datetime
+            ticket.uploaded = arrow.utcnow().to('Europe/Helsinki').datetime
+            ticket.uploaded_by = g.current_user
+            ticket.reserved = None
+            ticket.used = None
+            db.session.add(ticket)
+        db.session.commit()

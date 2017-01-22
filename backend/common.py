@@ -14,7 +14,7 @@ def verify_token(token):
     try:
         token = s.loads(token)
         g.current_user = token['user']
-    except Exception, e:
+    except Exception as e:
         logging.error(e)
         return False
     return True
