@@ -1,0 +1,20 @@
+version: '2'
+services:
+    web:
+        build: .
+        restart: always
+        volumes:
+          - ./config:/webapps/sarjalipputasku/config:ro
+          - ./backend:/webapps/sarjalipputasku/backend:ro
+        expose:
+          - "8000"
+
+    nginx:
+        image: nginx:latest
+        ports:
+          - "8888:80"
+        volumes:
+          - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
+          - ./frontend:/usr/share/nginx/html:ro 
+        depends_on:
+          - web

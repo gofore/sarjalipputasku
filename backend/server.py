@@ -18,3 +18,7 @@ app.register_blueprint(routes)
 app.register_blueprint(upload)
 app.register_blueprint(sessions)
 app.register_blueprint(mytickets)
+
+@app.route('/')
+def index():
+    return app.send_static_file('index.html')

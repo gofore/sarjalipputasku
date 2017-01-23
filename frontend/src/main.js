@@ -12,39 +12,39 @@ Vue.use(VueResource);
 Vue.use(VueRouter)
 
 Vue.http.interceptors.push((request, next) => {
-    request.headers.set('Authorization', auth.getAuthorizationHeader())
-		next((response) => {
-			if (response.status === 401) {
-				auth.logout()			
-			}
+  request.headers.set('Authorization', auth.getAuthorizationHeader())
+  next((response) => {
+    if (response.status === 401) {
+      auth.logout()
+    }
   })
 })
 
 var router = new VueRouter({
-	routes: [
-		{ path: '/', 
-			component: Search, 
-			meta: { auth: true }
+  routes: [
+    { path: '/', 
+      component: Search, 
+      meta: { auth: true }
     },
     { path: '/mytickets', component: MyTickets },
-	  { path: '/login',  component: Login },
- 		{ path: '/upload',
-			component: Upload,
-			meta: { auth: true }
-		}
-]})
+    { path: '/login',  component: Login },
+    { path: '/upload',
+      component: Upload,
+      meta: { auth: true }
+    }
+  ]})
 
 router.beforeEach(function (to, from, next) {
-	if (to.meta.auth && !auth.isAuthenticated()) {
-		next('/login')
-	} else {
-		next()
-	}
+  if (to.meta.auth && !auth.isAuthenticated()) {
+    next('/login')
+  } else {
+    next()
+  }
 })
 
 const app = new Vue({
   router,
-	render: h => h(App)
+  render: h => h(App)
 }).$mount('#app')
 
 auth.isAuthenticated()
