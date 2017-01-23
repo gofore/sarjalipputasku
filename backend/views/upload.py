@@ -37,7 +37,6 @@ class UploadView(Resource):
         rsrcmgr = PDFResourceManager(caching=False)
         device = HTMLConverter(rsrcmgr, outfp)
         interpreter = PDFPageInterpreter(rsrcmgr, device)
-        print(page)
         interpreter.process_page(page)
         html_doc = outfp.getvalue()
         soup = BeautifulSoup(html_doc, 'html.parser')
