@@ -25,7 +25,7 @@ export default {
       this.$http.post('/api/v1/upload', formData).then((response) => {
         this.uploadMessage = "Lataus onnistui";
       }, (response) => {
-        this.uploadMessage = "Lataus epäonnistui";
+        this.uploadMessage = "Lataus epäonnistui: " + response.data.message;
       });
     }
   }

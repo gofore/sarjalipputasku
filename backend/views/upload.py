@@ -1,26 +1,83 @@
 from flask_restful import reqparse, Resource
-from flask import abort, Blueprint
+from flask import abort, g, Blueprint
 
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.pdfpage import PDFPage
 from pdfminer.converter import HTMLConverter
 
 import base64
-import datetime
 import werkzeug
 import tempfile
+import uuid
 import re
-from pytz import timezone
+import arrow
 from bs4 import BeautifulSoup
 import StringIO
 import os
 
 from app import mongo
-from common import InvalidUsage, auth
+from common import auth
 upload = Blueprint('upload', __name__)
 
 
 class UploadView(Resource):
+    def base64_encode_qrcode(self, qrcode):
+        try:
+            with open(qrcode, "rb") as image_file:
+                return base64.b64encode(image_file.read())
+        except:
+            return ''
+
+    def get_pages(self, fname):
+        try:
+            with file(fname, 'rb') as fd:
+                return [self.get_html_soup(page) for page in PDFPage.get_pages(fd)]
+        except:
+            return None
+
+    def get_html_soup(self, page):
+        outfp = StringIO.StringIO()
+        rsrcmgr = PDFResourceManager(caching=False)
+        device = HTMLConverter(rsrcmgr, outfp)
+        interpreter = PDFPageInterpreter(rsrcmgr, device)
+        interpreter.process_page(page)
+        html_doc = outfp.getvalue()
+        soup = BeautifulSoup(html_doc, 'html.parser')
+        device.close()
+        outfp.close()
+        return soup
+
+    def get_order_id(self, soup):
+        order_id = re.search("Tilausnumero:\W+(\d+)", soup.text)
+        if not order_id:
+            abort(422)
+        return order_id.groups()[0]
+
+    def get_ticket_id(self, soup):
+        ticket_id = re.search("- (.+) -", soup.text)
+        if not ticket_id:
+            abort(422)
+        return ticket_id.groups()[0]
+
+    def get_route(self, soup):
+        route = re.search("\d+ / \d+(.+) - (.*)Aikuinen", soup.text)
+        if not route:
+            abort(422)
+        return route.groups()
+
+    def get_price(self, soup):
+        prices = re.search("10%(\d+,\d\d)\d+,\d\d(\d+,\d\d)", soup.text).groups()
+        if not prices:
+            abort(422)
+        price_without_tax, price_with_tax = prices
+        return float(price_without_tax.replace(",", "."))
+
+    def get_ticket_type_and_expiration(self, soup):
+        match = re.search("\d\d\.\d\d\.\d\d\d\d(.+)(\d\d\.\d\d\.\d\d\d\d)", soup.text).groups()
+        if not match:
+            abort(422)
+        return match
+
     @auth.login_required
     def post(self):
         parser = reqparse.RequestParser()
@@ -37,67 +94,41 @@ class UploadView(Resource):
         tmp_src_file = tmp_dir + '/in.pdf'
         with file(tmp_src_file, 'wb') as fd:
             fd.write(args['file'].read())
-        qr_codes = []
-        unique_ticket_order = None
-        with file(tmp_src_file, 'rb') as fd:
-            for page in PDFPage.get_pages(fd):
-                outfp = StringIO.StringIO()
-                rsrcmgr = PDFResourceManager(caching=False)
-                device = HTMLConverter(rsrcmgr, outfp)
-                interpreter = PDFPageInterpreter(rsrcmgr, device)
-                interpreter.process_page(page)
-                html_doc = outfp.getvalue()
-                soup = BeautifulSoup(html_doc, 'html.parser')
+
+        pages = self.get_pages(tmp_src_file)
+        if not pages:
+            return {"message": "Could not parse the uploaded file, is this actually the PDF file with tickets?"}, 422
 
-                route = re.search("\d+ / \d+(.+) - (.*)Aikuinen", soup.text)
-                if not route:
-                    abort(422)
-                route = route.groups()
+        first_page = pages[0]
+        ticket_count = mongo.db.tickets.find({"order_id": self.get_order_id(first_page)}).count()
 
-                order_id = re.search("Tilausnumero:\W+(\d+)", soup.text)
-                if not order_id:
-                    abort(422)
-                order_id = order_id.groups()[0]
+        qr_codes = iter([])
+        if ticket_count:
+            return {"message": "Ticket already uploaded"}, 400
+        try:
+            os.popen('pdfimages -png ' + tmp_src_file + ' ' + tmp_dir + '/out')
+            ims = os.popen("ls " + tmp_dir + "/out*").read().split()
+            qr_codes = iter(ims[1:len(ims):2])
+        except:
+            print("XXX: No poppler installed, unable to produce 2D barcodes")
 
-                ticket_id = re.search("- (.+) -", soup.text)
-                if not ticket_id:
-                    abort(422)
-
-                ticket_id = ticket_id.groups()[0]
-                print("tmp_dir: " + tmp_dir)
-                if not unique_ticket_order:
-                    ticket_count = mongo.db.tickets.find({"order_id": order_id}).count()
-                    if ticket_count:
-                        raise InvalidUsage("Ticket already uploaded", status_code=400)
-                    try:
-                        os.popen('pdfimages -png ' + tmp_src_file + ' ' + tmp_dir + '/out')
-                        ims = os.popen("ls " + tmp_dir + "/out*").read().split()
-                        qr_codes = iter(ims[1:len(ims):2])
-                    except:
-                        print("XXX: No poppler installed, unable to produce 2D barcodes")
-                    unique_ticket_order = True
-
-                ticket_type, expires = re.search("\d\d\.\d\d\.\d\d\d\d(.+)(\d\d\.\d\d\.\d\d\d\d)", soup.text).groups()
-                print(route, ticket_id, ticket_type, expires)
-                hell_zone = timezone('Europe/Helsinki')
-                end_of_day = datetime.timedelta(hours=23, minutes=59, seconds=59)
-
-                qr_base64 = ''
-                try:
-                    with open(qr_codes.next(), "rb") as image_file:
-                        qr_base64 = base64.b64encode(image_file.read())
-                except:
-                    pass
-                mongo.db.tickets.insert({
-                    'src': route[0],
-                    'dest': route[1],
-                    'qr': 'data:image/png;base64,' + qr_base64,
-                    'order_id': order_id,
-                    'ticket_type': ticket_type,
-                    'ticket_id': ticket_id,
-                    'expiration_date': hell_zone.localize(datetime.datetime.strptime(expires, '%d.%m.%Y') + end_of_day),
-                    'reserved': None,
-                    'used': None
-                })
-                device.close()
-                outfp.close()
+        tickets = []
+        for page in pages:
+            route = self.get_route(page)
+            ticket_type, expires = self.get_ticket_type_and_expiration(page)
+            qr_base64 = self.base64_encode_qrcode(qr_codes.next())
+            tickets.append({
+                'ticket_id': uuid.uuid4().hex,
+                'src': route[0].upper(),
+                'dest': route[1].upper(),
+                'qr': 'data:image/png;base64,' + qr_base64,
+                'order_id': self.get_order_id(page),
+                'ticket_type': ticket_type,
+                'ticket_id': self.get_ticket_id(page),
+                'expiration_date': arrow.get(expires, 'DD.MM.YYYY').to('Europe/Helsinki').ceil('day').datetime,
+                'ticket_uploaded': arrow.utcnow().to('Europe/Helsinki').datetime,
+                'ticket_uploaded_by': g.current_user,
+                'reserved': None,
+                'used': None
+            })
+        mongo.db.tickets.insert_many(tickets)

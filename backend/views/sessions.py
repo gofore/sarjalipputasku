@@ -23,17 +23,23 @@ class SessionView(Resource):
         if app.config['DUMMY_AUTHENTICATION']:
             return self.token_with_email('test@example.org')
 
-        con = ldap.initialize(app.config['LDAP_URL'])
-        con.start_tls_s()
-        try:
-            con.simple_bind_s(form.email.data, form.password.data)
-        except ldap.INVALID_CREDENTIALS:
-            return {
-                'message': 'Unauthorized',
-                'status': 401
-            }, 401
+        if app.config.get('LDAP_URL'):
+            con = ldap.initialize(app.config['LDAP_URL'])
+            con.start_tls_s()
+            try:
+                con.simple_bind_s(form.email.data, form.password.data)
+            except ldap.INVALID_CREDENTIALS:
+                return {
+                    'message': 'Unauthorized',
+                    'status': 401
+                }, 401
 
-        return self.token_with_email(self.email.data)
+            return self.token_with_email(self.email.data)
+
+        return {
+            'message': 'Authentication disabled',
+            'status': 401
+        }, 401
 
     def token_with_email(self, email):
         s = Serializer(app.config['SECRET_KEY'], expires_in=3600)

@@ -1,19 +1,22 @@
 from flask_restful import marshal_with, fields, Resource
-from flask import Blueprint, abort, request
+from flask import Blueprint, abort, request, g
 from datetime import datetime
 from bson.objectid import ObjectId
 import pymongo
-
+import arrow
 from common import InvalidUsage, auth
 from app import mongo
-
 
 ticket = {
     'id': fields.String(attribute='_id'),
     'src': fields.String,
     'dest': fields.String,
     'expiration_date': fields.DateTime(dt_format='iso8601'),
+    'price': fields.Float,
     'qr': fields.String,
+    'order_id': fields.String,
+    'reserved': fields.DateTime(dt_format='iso8601'),
+    'used': fields.DateTime(dt_format='iso8601'),
     'vr_id': fields.String(attribute='ticket_id'),
 }
 
@@ -75,14 +78,14 @@ class RouteView(Resource):
                 abort(409)
             if ticket.get('used') is not None:
                 abort(409)
-            reserved_state = datetime.now() if reserved_arg else None
+            reserved_state = arrow.utcnow().to('Europe/Helsinki').datetime if reserved_arg else None
         else:
             reserved_state = ticket.get('reserved')
 
         if used_arg is not None:
             if used_arg and ticket.get('used') is not None:
                 abort(409)
-            used_state = datetime.now() if used_arg else None
+            used_state = arrow.utcnow().to('Europe/Helsinki').datetime if used_arg else None
         else:
             used_state = ticket.get('used')
 
@@ -92,6 +95,7 @@ class RouteView(Resource):
                 '$set': {
                     "used": used_state,
                     "reserved": reserved_state,
+                    "updated_by": g.current_user
                 },
             })
         print result.matched_count
