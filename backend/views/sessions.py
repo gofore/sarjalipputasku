@@ -1,7 +1,10 @@
 from flask_restful import Resource, marshal, fields
 from flask import Blueprint
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-import ldap
+
+try:
+    import ldap
+except: pass
 
 from forms import LoginForm
 from app import app
