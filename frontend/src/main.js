@@ -6,6 +6,7 @@ import Login from './components/Login.vue'
 import Upload from './components/Upload.vue'
 import Search from './components/Search.vue'
 import MyTickets from './components/MyTickets.vue'
+import TokenLogin from './components/TokenLogin.vue'
 import auth from './auth'
 
 Vue.use(VueResource);
@@ -26,8 +27,12 @@ var router = new VueRouter({
       component: Search, 
       meta: { auth: true }
     },
-    { path: '/mytickets', component: MyTickets },
+    { path: '/mytickets',
+      component: MyTickets,
+      meta: { auth: true }
+    },
     { path: '/login',  component: Login },
+    { path: '/tlogin', component: TokenLogin },
     { path: '/upload',
       component: Upload,
       meta: { auth: true }

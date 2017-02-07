@@ -1,11 +1,13 @@
 from flask_restful import marshal_with, fields, Resource
-from flask import Blueprint, abort, request, g
+from flask import Blueprint, abort, request, send_file, g
 from datetime import datetime
 from bson.objectid import ObjectId
 import pymongo
 import arrow
 from common import InvalidUsage, auth
 from app import mongo
+import base64
+import StringIO
 
 ticket = {
     'id': fields.String(attribute='_id'),
@@ -102,3 +104,16 @@ class RouteView(Resource):
         if result.matched_count < 1:
             abort(400)
         return (204)
+
+
+class RouteImageView(Resource):
+    def get(self, id):
+        ticket = mongo.db.tickets.find_one({
+            "_id": ObjectId(id),
+        })
+        if not ticket:
+            abort(404)
+        img_bin = StringIO.StringIO()
+        img_bin.write(base64.decodestring(ticket['qr'].split("data:image/png;base64,")[1]))
+        img_bin.seek(0)
+        return send_file(img_bin, attachment_filename="qr.png")

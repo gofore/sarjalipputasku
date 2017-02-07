@@ -3,4 +3,5 @@ class BaseConfig(object):
     WTF_CSRF_ENABLED = False
     SECRET_KEY = "secret key, change me"
     MONGO_DBNAME = "test"
+    BASE_URL = 'http://localhost:5000'
     DUMMY_AUTHENTICATION = False

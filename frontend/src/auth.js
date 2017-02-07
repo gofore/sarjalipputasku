@@ -17,13 +17,19 @@ export default {
             (err) => {
           context.error = err
         })
-    },
-    logout() {
+  },
+  clearToken() {
     localStorage.removeItem('token')
     this.user.authenticated = false
-        router.push('/login')
   },
-    isAuthenticated() {
+  logout() {
+    this.clearToken()
+    router.push('/login')
+  },
+  tokenLogin(token) {
+    localStorage.setItem('token', token)
+  },
+  isAuthenticated() {
     var jwt = localStorage.getItem('token')
     if(jwt) {
       this.user.authenticated = true
@@ -31,9 +37,9 @@ export default {
     else {
       this.user.authenticated = false
     }
-        return this.user.authenticated
+    return this.user.authenticated
   },
-    getAuthorizationHeader() {
+  getAuthorizationHeader() {
     return 'Bearer ' + localStorage.getItem('token')
   }
 }

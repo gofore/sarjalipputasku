@@ -123,6 +123,7 @@ class UploadView(Resource):
                 'dest': route[1].upper(),
                 'qr': 'data:image/png;base64,' + qr_base64,
                 'order_id': self.get_order_id(page),
+                'price': self.get_price(page) / len(pages),
                 'ticket_type': ticket_type,
                 'ticket_id': self.get_ticket_id(page),
                 'expiration_date': arrow.get(expires, 'DD.MM.YYYY').to('Europe/Helsinki').ceil('day').datetime,
