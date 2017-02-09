@@ -5,3 +5,4 @@ class BaseConfig(object):
     MONGO_DBNAME = "test"
     BASE_URL = 'http://localhost:5000'
     DUMMY_AUTHENTICATION = False
+    SLACKBOT_API_TOKEN = ''
