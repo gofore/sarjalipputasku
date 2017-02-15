@@ -1,7 +1,7 @@
 import flask_restful
 
 from app import app
-from views.routes import routes, RouteList, RouteView, RouteImageView
+from views.routes import routes, RouteList, RouteView, RouteImageView, RouteSummaryList
 from views.upload import upload, UploadView
 from views.sessions import sessions, SessionView
 from views.mytickets import mytickets, MyTicketsList
@@ -14,6 +14,7 @@ api.add_resource(RouteImageView, api_root + '/qr/<string:id>.png')
 api.add_resource(UploadView, api_root + '/upload')
 api.add_resource(SessionView, api_root + '/login')
 api.add_resource(MyTicketsList, api_root + '/mytickets')
+api.add_resource(RouteSummaryList, api_root + '/routesummary')
 
 app.register_blueprint(routes)
 app.register_blueprint(upload)

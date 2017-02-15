@@ -63,7 +63,7 @@ class UploadView(Resource):
         route = re.search("\d+ / \d+(.+) - (.*)Aikuinen", soup.text)
         if not route:
             abort(422)
-        return route.groups()
+        return sorted(route.groups())
 
     def get_price(self, soup):
         prices = re.search("10%(\d+,\d\d)\d+,\d\d(\d+,\d\d)", soup.text).groups()

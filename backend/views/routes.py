@@ -1,6 +1,7 @@
 from flask_restful import marshal_with, fields, Resource
 from flask import Blueprint, abort, request, send_file, g
 from datetime import datetime
+from bson.code import Code
 from bson.objectid import ObjectId
 import pymongo
 import arrow
@@ -26,7 +27,21 @@ route_fields = {
     'tickets': fields.List(fields.Nested(ticket))
 }
 
+route_summary_fields = {
+    'src': fields.String,
+    'dest': fields.String,
+    'count': fields.Integer
+}
+
 routes = Blueprint('routes', __name__)
+
+
+class RouteSummaryList(Resource):
+    @auth.login_required
+    @marshal_with(route_summary_fields)
+    def get(self):
+        reducer = Code("""function(obj, prev){prev.count++;}""")
+        return mongo.db.tickets.group(key={"src": 1, "dest": 1}, condition={}, initial={"count": 0}, reduce=reducer)
 
 
 class RouteList(Resource):
