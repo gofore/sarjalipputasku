@@ -1,5 +1,5 @@
 from slackbot.bot import Bot
-from slackbot.bot import respond_to
+from slackbot.bot import respond_to, default_reply
 import re
 import json
 from app import app
@@ -13,36 +13,40 @@ def identified_user():
     def deco(f):
         def wrapper(*args, **kwargs):
             message = args[0]
-            email = message._client.users.get(message.body["user"]).get('profile', {}).get('email')
+            user_info = message._client.users.get(message.body["user"])
+            if user_info.get('is_ultra_restricted', True):
+                message.reply("Sorry, I only work with team members")
+                return
+            email = user_info.get('profile', {}).get('email')
             f(email, *args, **kwargs)
         return wrapper
     return deco
 
 
-@identified_user()
 @respond_to('login', re.IGNORECASE)
+@identified_user()
 def login(email, message):
     s = SessionView()
     token = s.token_with_email(email)['token']
     message.reply("Here's your link to log in %s" % BASE_URL + '/#/tlogin?token=' + token)
 
 
+@respond_to('tickets', re.IGNORECASE)
 @identified_user()
-@respond_to(r'tickets', re.IGNORECASE)
 def tickets(email, message):
     s = SessionView()
     token = s.token_with_email(email)['token']
-    resp = requests.get(BASE_URL + '/api/v1/routessummary',
+    resp = requests.get(BASE_URL + '/api/v1/routesummary',
                         headers={'Authorization': 'Bearer %s' % token})
     if resp.status_code != 200:
         message.reply("Error in ticket search")
         return
-
     message.reply('\n'.join(['%s-%s (%s kpl)' % (x['src'], x['dest'], x['count']) for x in resp.json()]))
 
 
 @respond_to(r'ticket (\S+) (\S+)', re.IGNORECASE)
-def ticket(message, src, dest):
+@identified_user()
+def ticket(email, message, src, dest):
     email = message._client.users.get(message.body["user"]).get('profile', {}).get('email')
     s = SessionView()
     token = s.token_with_email(email)['token']
@@ -57,8 +61,8 @@ def ticket(message, src, dest):
     ticket = resp.json().get('tickets')[0]
     attachments = [
     {
-        'fallback': 'Oldschool? Rock on, view your tickets here %s' % BASE_URL + '/#/tlogin?token=' + token,
-        'image_url': 'http://i.imgur.com/Cpi7K5w.png', #BASE_URL + '/api/v1/qr/%s.png' % ticket['id'],
+        'fallback': 'Your ticket is available! If using text mode client view your tickets here %s' % BASE_URL + '/#/tlogin?token=' + token,
+        'image_url': BASE_URL + '/api/v1/qr/%s.png' % ticket['id'],
         'text': 'Ticket: %s - %s' % (src, dest),
         "fields": [{
             "title": "Ticket ID",
@@ -74,10 +78,26 @@ def ticket(message, src, dest):
             "short": True
         }],
         'color': '#59afe1',
-        "actions": [{"name": "ticket", "text": "Reserve", "type": "button", "value": "reserve"},
-                    {"name": "ticket", "text": "Release", "type": "button", "value": "release"}]
+    }, {
+        "title": "Reserve ticket to be used by you or release it back to ticket pool?",
+        'callback_id': ticket['id'],
+        "actions": [{"name": "ticket", "text": "Reserve", "type": "button", "value": "reserve", "style": "primary"},
+                    {"name": "ticket", "text": "Release", "type": "button", "value": "release",
+                     "confirm": {"title": "Are you sure?",
+                                 "text": "Released ticket will be returned to pool of available tickets",
+                                 "ok_text": "Yes",
+                                 "dismiss_text": "No"}}]
     }]
     message.send_webapi('', json.dumps(attachments))
+
+@identified_user()
+@default_reply
+def my_default_hanlder(message):
+    message.reply('''Beep! Ask me following\n
+\t- "tickets" - to list available tickets
+\t- "ticket tampere helsinki" - to query tickets for a route (e.g. tampere & helsinki)
+\t- "login" - to get a direct login link into Sarjalipputasku web interface
+''')
 
 
 def main():

@@ -41,7 +41,7 @@ class RouteSummaryList(Resource):
     @marshal_with(route_summary_fields)
     def get(self):
         reducer = Code("""function(obj, prev){prev.count++;}""")
-        return mongo.db.tickets.group(key={"src": 1, "dest": 1}, condition={}, initial={"count": 0}, reduce=reducer)
+        return mongo.db.tickets.group(key={"src": 1, "dest": 1}, condition={"reserved": None}, initial={"count": 0}, reduce=reducer)
 
 
 class RouteList(Resource):
@@ -75,50 +75,57 @@ class RouteList(Resource):
         return {'tickets': available_tickets}
 
 
+def update_ticket(id, data, current_user=None):
+    reserved_arg = data.get('reserved')
+    used_arg = data.get('used')
+    if reserved_arg is None and used_arg is None:
+        raise InvalidUsage("reserved or used parameter missing")
+
+    ticket = mongo.db.tickets.find_one({
+        "_id": ObjectId(id),
+    })
+    if not ticket:
+        abort(409)
+
+    if reserved_arg is not None:
+        if reserved_arg and ticket.get('reserved') is not None:
+            abort(409)
+        if ticket.get('used') is not None:
+            abort(409)
+        reserved_state = arrow.utcnow().to('Europe/Helsinki').datetime if reserved_arg else None
+    else:
+        reserved_state = ticket.get('reserved')
+
+    if used_arg is not None:
+        if used_arg and ticket.get('used') is not None:
+            abort(409)
+        used_state = arrow.utcnow().to('Europe/Helsinki').datetime if used_arg else None
+    else:
+        used_state = ticket.get('used')
+
+    update_fields = {
+        "used": used_state,
+        "reserved": reserved_state,
+    }
+    if current_user:
+        update_fields["updated_by"] = g.current_user
+
+    result = mongo.db.tickets.update_one({
+        "_id": ObjectId(id)
+    }, {
+        '$set': update_fields,
+    })
+    print result.matched_count
+    if result.matched_count < 1:
+        abort(400)
+    return (204)
+
+
 class RouteView(Resource):
     @auth.login_required
     def put(self, id):
         data = request.get_json(force=True)
-        reserved_arg = data.get('reserved')
-        used_arg = data.get('used')
-        if reserved_arg is None and used_arg is None:
-            raise InvalidUsage("reserved or used parameter missing")
-
-        ticket = mongo.db.tickets.find_one({
-            "_id": ObjectId(id),
-        })
-        if not ticket:
-            abort(409)
-
-        if reserved_arg is not None:
-            if reserved_arg and ticket.get('reserved') is not None:
-                abort(409)
-            if ticket.get('used') is not None:
-                abort(409)
-            reserved_state = arrow.utcnow().to('Europe/Helsinki').datetime if reserved_arg else None
-        else:
-            reserved_state = ticket.get('reserved')
-
-        if used_arg is not None:
-            if used_arg and ticket.get('used') is not None:
-                abort(409)
-            used_state = arrow.utcnow().to('Europe/Helsinki').datetime if used_arg else None
-        else:
-            used_state = ticket.get('used')
-
-        result = mongo.db.tickets.update_one(
-            {"_id": ObjectId(id)},
-            {
-                '$set': {
-                    "used": used_state,
-                    "reserved": reserved_state,
-                    "updated_by": g.current_user
-                },
-            })
-        print result.matched_count
-        if result.matched_count < 1:
-            abort(400)
-        return (204)
+        return update_ticket(id, data, g.current_user)
 
 
 class RouteImageView(Resource):

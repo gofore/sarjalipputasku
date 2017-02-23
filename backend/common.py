@@ -11,7 +11,6 @@ auth.authenticate_header = lambda: "Authentication Required"
 @auth.verify_token
 def verify_password(token):
     s = Serializer(app.config['SECRET_KEY'])
-    logging.warn("token:" + token)
     try:
         token = s.loads(token)
         g.current_user = token['user']
