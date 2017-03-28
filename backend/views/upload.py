@@ -8,6 +8,7 @@ from pdfminer.converter import HTMLConverter
 import base64
 import werkzeug
 import tempfile
+import struct
 import uuid
 import re
 import arrow
@@ -30,7 +31,7 @@ class UploadView(Resource):
 
     def get_pages(self, fname):
         try:
-            with file(fname, 'rb') as fd:
+            with open(fname, 'rb') as fd:
                 return [self.get_html_soup(page) for page in PDFPage.get_pages(fd)]
         except:
             return None
@@ -80,6 +81,13 @@ class UploadView(Resource):
 
     @auth.login_required
     def post(self):
+        def is_square(fn):
+            with open(fn, 'rb') as fd:
+                head = fd.read(24)
+                width, height = struct.unpack('>ii', head[16:24])
+                if int(width) == int(height):
+                    return True
+
         parser = reqparse.RequestParser()
         parser.add_argument('file', type=werkzeug.datastructures.FileStorage, location='files')
         args = parser.parse_args()
@@ -92,7 +100,7 @@ class UploadView(Resource):
 
         tmp_dir = tempfile.mkdtemp()
         tmp_src_file = tmp_dir + '/in.pdf'
-        with file(tmp_src_file, 'wb') as fd:
+        with open(tmp_src_file, 'wb') as fd:
             fd.write(args['file'].read())
 
         pages = self.get_pages(tmp_src_file)
@@ -108,7 +116,8 @@ class UploadView(Resource):
         try:
             os.popen('pdfimages -png ' + tmp_src_file + ' ' + tmp_dir + '/out')
             ims = os.popen("ls " + tmp_dir + "/out*").read().split()
-            qr_codes = iter(ims[1:len(ims):2])
+            qr_codes = iter([fn for fn in ims if is_square(fn)])
+            # qr_codes = iter(ims[1:len(ims):2])
         except:
             print("XXX: No poppler installed, unable to produce 2D barcodes")
 
