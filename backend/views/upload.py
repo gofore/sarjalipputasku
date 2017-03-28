@@ -22,7 +22,7 @@ upload = Blueprint('upload', __name__)
 
 
 class UploadView(Resource):
-    def base64_encode_qrcode(self, qrcode):
+    def base64_encode(self, qrcode):
         try:
             with open(qrcode, "rb") as image_file:
                 return base64.b64encode(image_file.read())
@@ -58,7 +58,7 @@ class UploadView(Resource):
         ticket_id = re.search("- (.+) -", soup.text)
         if not ticket_id:
             abort(422)
-        return ticket_id.groups()[0]
+        return ticket_id.groups()[0].strip()
 
     def get_route(self, soup):
         route = re.search("\d+ / \d+(.+) - (.*)Aikuinen", soup.text)
@@ -94,43 +94,49 @@ class UploadView(Resource):
         if 'file' not in args:
             abort(422)
 
-        # Danger Zone, parsing PDF files is dirty and this one definately ain't
-        # the prettiest creature alive. Cleanse yourself with strong liqueur
-        # afterwards.
-
         tmp_dir = tempfile.mkdtemp()
         tmp_src_file = tmp_dir + '/in.pdf'
         with open(tmp_src_file, 'wb') as fd:
             fd.write(args['file'].read())
-
-        pages = self.get_pages(tmp_src_file)
-        if not pages:
-            return {"message": "Could not parse the uploaded file, is this actually the PDF file with tickets?"}, 422
 
-        first_page = pages[0]
-        ticket_count = mongo.db.tickets.find({"order_id": self.get_order_id(first_page)}).count()
+        qr_codes = []
+        pdf_files = []
 
-        qr_codes = iter([])
-        if ticket_count:
-            return {"message": "Ticket already uploaded"}, 400
         try:
+            # Danger Zone, parsing PDF files is dirty and this one definately ain't
+            # the prettiest creature alive. Cleanse yourself with strong liqueur
+            # afterwards.
             os.popen('pdfimages -png ' + tmp_src_file + ' ' + tmp_dir + '/out')
-            ims = os.popen("ls " + tmp_dir + "/out*").read().split()
-            qr_codes = iter([fn for fn in ims if is_square(fn)])
-            # qr_codes = iter(ims[1:len(ims):2])
+            ims = os.popen("ls " + tmp_dir + "/out*.png").read().split()
+            qr_codes = [fn for fn in ims if is_square(fn)]
+            os.popen("pdfseparate " + tmp_src_file + ' ' + tmp_dir + "/pdfout-%d.pdf")
+            pdfs = os.popen("ls " + tmp_dir + "/pdfout-*.pdf").read().split()
+            pdf_files = [fn for fn in pdfs]
         except:
             print("XXX: No poppler installed, unable to produce 2D barcodes")
 
+        if len(qr_codes) != len(pdf_files) != len(pages):
+            return {"message": "Invalid ticket file"}, 400
+
         tickets = []
-        for page in pages:
+        for qr_code, pdf_file in iter(zip(qr_codes, pdf_files)):
+            pages = self.get_pages(pdf_file)
+            if not pages:
+                return {"message": "Could not parse the uploaded file, is this actually the PDF file with tickets?"}, 422
+            page = pages[0]
+            ticket_count = mongo.db.tickets.find({"order_id": self.get_order_id(page)}).count()
+            if ticket_count:
+                return {"message": "Ticket already uploaded"}, 400
             route = self.get_route(page)
             ticket_type, expires = self.get_ticket_type_and_expiration(page)
-            qr_base64 = self.base64_encode_qrcode(qr_codes.next())
+            qr_base64 = self.base64_encode(qr_code)
+            pdf_base64 = self.base64_encode(pdf_file)
             tickets.append({
                 'ticket_id': uuid.uuid4().hex,
                 'src': route[0].upper(),
                 'dest': route[1].upper(),
                 'qr': 'data:image/png;base64,' + qr_base64,
+                'pdf': 'data:application/pdf;base64,' + pdf_base64,
                 'order_id': self.get_order_id(page),
                 'price': self.get_price(page) / len(pages),
                 'ticket_type': ticket_type,

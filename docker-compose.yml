@@ -8,11 +8,15 @@ services:
         - "27017"
 
     web:
-      build: .
+      build:
+        context: .
+        args:
+          CONFIG_FILE: config/app-docker.cfg
       restart: always
       volumes:
         - ./config:/webapps/sarjalipputasku/config:ro
-        - ./backend:/webapps/sarjalipputasku/backend:ro
+        - ./backend:/webapps/sarjalipputasku/source:ro
+        - ./frontend:/webapps/sarjalipputasku/static:ro
       expose:
         - "8000"
       depends_on:

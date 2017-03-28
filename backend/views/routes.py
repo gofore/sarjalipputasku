@@ -17,6 +17,7 @@ ticket = {
     'expiration_date': fields.DateTime(dt_format='iso8601'),
     'price': fields.Float,
     'qr': fields.String,
+    'pdf': fields.String,
     'order_id': fields.String,
     'ticket_type': fields.String,
     'reserved': fields.DateTime(dt_format='iso8601'),

@@ -8,7 +8,9 @@
         <span>{{ ticket.src }} - {{ ticket.dest }}</span><br />
         Varattu: <span>{{ formatDate(ticket.reserved) }}</span><br />
         Hinta: <span>{{ ticket.price }} &euro; (alv 0%)</span><br />
-        <span>{{ ticket.order_id }} - {{ ticket.vr_id }}</span><br />
+        <span>{{ ticket.order_id }} - {{ ticket.vr_id }} - 
+          <a download="biljet.pdf" v-bind:href="ticket.pdf" title="Download pdf">pdf</a>
+        </span><br />
       </div>
       <div class="col-md-2">
         <button class="btn btn-success" v-on:click="useTicket(ticket.id)" v-if="!ticket.used">Käytä</button>
