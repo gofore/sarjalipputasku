@@ -1,7 +1,7 @@
 <template>
   <div>
     <h2>Lippusi</h2>
-    <span>{{ ticket.src }} - {{ ticket.dest }}</span><br />
+    <span>{{ ticket.src }} - {{ ticket.dest }} {{ ticket.ticket_type }}</span><br />
     Voimassa: <span>{{ formatDate(ticket.expiration_date) }}</span><br />
     Hinta: <span>{{ ticket.price }} &euro; (alv 0%)</span><br />
     <span>{{ ticket.vr_id }}</span><br />
@@ -53,7 +53,6 @@ export default {
       }).then((response) => {
         this.reserved = true;
       }, (response) => {
-        console.log("error")
         this.error = 'Lipun varaaminen ei onnistunut';
       });
     },

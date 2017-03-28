@@ -18,6 +18,7 @@ ticket = {
     'price': fields.Float,
     'qr': fields.String,
     'order_id': fields.String,
+    'ticket_type': fields.String,
     'reserved': fields.DateTime(dt_format='iso8601'),
     'used': fields.DateTime(dt_format='iso8601'),
     'vr_id': fields.String(attribute='ticket_id'),
@@ -50,11 +51,12 @@ class RouteList(Resource):
     def get(self):
         src = request.args.get('src')
         dest = request.args.get('dest')
+        type = request.args.get('type')
         if not src or not dest:
             return
 
         now = datetime.now()
-        available_tickets = mongo.db.tickets.find_one({
+        query = {
             '$or': [
             {
                 'src': src.upper(),
@@ -70,8 +72,12 @@ class RouteList(Resource):
                 'used': None,
                 'expiration_date': {'$gt': now}
             }
-        ]}, sort=[('expiration_date', pymongo.ASCENDING)]
-        )
+        ]}
+
+        ticket_types = {'EKO': '2.lk', 'EKSTRA': '1.lk'}
+        if type and type in ticket_types.keys():
+            query['ticket_type'] = {'$regex': ticket_types[type]}
+        available_tickets = mongo.db.tickets.find_one(query, sort=[('expiration_date', pymongo.ASCENDING)])
         return {'tickets': available_tickets}
 
 
@@ -107,8 +113,10 @@ def update_ticket(id, data, current_user=None):
         "used": used_state,
         "reserved": reserved_state,
     }
-    if current_user:
-        update_fields["updated_by"] = g.current_user
+    if current_user is None:
+        current_user = g.current_user
+
+    update_fields["updated_by"] = current_user
 
     result = mongo.db.tickets.update_one({
         "_id": ObjectId(id)

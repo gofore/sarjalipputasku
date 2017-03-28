@@ -44,13 +44,13 @@ def tickets(email, message):
     message.reply('\n'.join(['%s-%s (%s kpl)' % (x['src'], x['dest'], x['count']) for x in resp.json()]))
 
 
-@respond_to(r'ticket (\S+) (\S+)', re.IGNORECASE)
+@respond_to(r'ticket (\S+) (\S+) (EKO|EKSTRA|)', re.IGNORECASE)
 @identified_user()
-def ticket(email, message, src, dest):
+def ticket(email, message, src, dest, type=None):
     email = message._client.users.get(message.body["user"]).get('profile', {}).get('email')
     s = SessionView()
     token = s.token_with_email(email)['token']
-    resp = requests.get(BASE_URL + '/api/v1/routes?src=%s&dest=%s' % (src, dest),
+    resp = requests.get(BASE_URL + '/api/v1/routes?src=%s&dest=%s&type=%s' % (src, dest, type),
                         headers={'Authorization': 'Bearer %s' % token})
     if resp.status_code != 200:
         message.reply("Error in ticket search")
@@ -75,6 +75,10 @@ def ticket(email, message, src, dest):
         }, {
             "title": "Order ID",
             "value": ticket['order_id'],
+            "short": True
+        }, {
+            "title": "User",
+            "value": email,
             "short": True
         }],
         'color': '#59afe1',
