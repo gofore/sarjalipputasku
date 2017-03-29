@@ -6,7 +6,7 @@ try:
     import ldap
 except: pass
 
-from forms import LoginForm
+from .forms import LoginForm
 from app import app
 
 sessions = Blueprint('sessions', __name__)

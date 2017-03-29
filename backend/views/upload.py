@@ -9,11 +9,11 @@ import base64
 import werkzeug
 import tempfile
 import struct
-import uuid
+import logging
 import re
 import arrow
 from bs4 import BeautifulSoup
-import StringIO
+import io
 import os
 
 from app import mongo
@@ -21,69 +21,80 @@ from common import auth
 upload = Blueprint('upload', __name__)
 
 
+def get_price(soup):
+    prices = re.search("10%(\d+,\d\d)\d+,\d\d(\d+,\d\d)", soup.text).groups()
+    if not prices:
+        abort(422)
+    price_without_tax, price_with_tax = prices
+    return float(price_without_tax.replace(",", "."))
+
+
+def get_html_soup(page):
+    outfp = io.BytesIO()
+    rsrcmgr = PDFResourceManager(caching=False)
+    device = HTMLConverter(rsrcmgr, outfp)
+    interpreter = PDFPageInterpreter(rsrcmgr, device)
+    interpreter.process_page(page)
+    html_doc = outfp.getvalue()
+    soup = BeautifulSoup(html_doc, 'html.parser')
+    device.close()
+    outfp.close()
+    return soup
+
+
+def get_order_id(soup):
+    order_id = re.search("Tilausnumero:\W+(\d+)", soup.text)
+    if not order_id:
+        abort(422)
+    return order_id.groups()[0]
+
+
+def get_route(soup):
+    route = re.search("\d+ / \d+(.+) - (.*)Aikuinen", soup.text)
+    if not route:
+        abort(422)
+    return sorted(route.groups())
+
+
+def get_ticket_id(soup):
+    ticket_id = re.search("- (.+) -", soup.text)
+    if not ticket_id:
+        abort(422)
+    return ticket_id.groups()[0].strip()
+
+
+def get_pages(fname):
+    try:
+        with open(fname, 'rb') as fd:
+            r = [get_html_soup(page) for page in PDFPage.get_pages(fd)]
+            return r
+    except Exception as e:
+        logging.warning(e)
+        return None
+
+
+def base64_encode(qrcode):
+    try:
+        with open(qrcode, "rb") as image_file:
+            return base64.b64encode(image_file.read())
+    except Exception as e:
+        logging.warning(e)
+        return ''
+
+
+def get_ticket_type_and_expiration(soup):
+    match = re.search("\d\d\.\d\d\.\d\d\d\d(.+)(\d\d\.\d\d\.\d\d\d\d)", soup.text).groups()
+    if not match:
+        abort(422)
+    return match
+
+
 class UploadView(Resource):
-    def base64_encode(self, qrcode):
-        try:
-            with open(qrcode, "rb") as image_file:
-                return base64.b64encode(image_file.read())
-        except:
-            return ''
-
-    def get_pages(self, fname):
-        try:
-            with open(fname, 'rb') as fd:
-                return [self.get_html_soup(page) for page in PDFPage.get_pages(fd)]
-        except:
-            return None
-
-    def get_html_soup(self, page):
-        outfp = StringIO.StringIO()
-        rsrcmgr = PDFResourceManager(caching=False)
-        device = HTMLConverter(rsrcmgr, outfp)
-        interpreter = PDFPageInterpreter(rsrcmgr, device)
-        interpreter.process_page(page)
-        html_doc = outfp.getvalue()
-        soup = BeautifulSoup(html_doc, 'html.parser')
-        device.close()
-        outfp.close()
-        return soup
-
-    def get_order_id(self, soup):
-        order_id = re.search("Tilausnumero:\W+(\d+)", soup.text)
-        if not order_id:
-            abort(422)
-        return order_id.groups()[0]
-
-    def get_ticket_id(self, soup):
-        ticket_id = re.search("- (.+) -", soup.text)
-        if not ticket_id:
-            abort(422)
-        return ticket_id.groups()[0].strip()
-
-    def get_route(self, soup):
-        route = re.search("\d+ / \d+(.+) - (.*)Aikuinen", soup.text)
-        if not route:
-            abort(422)
-        return sorted(route.groups())
-
-    def get_price(self, soup):
-        prices = re.search("10%(\d+,\d\d)\d+,\d\d(\d+,\d\d)", soup.text).groups()
-        if not prices:
-            abort(422)
-        price_without_tax, price_with_tax = prices
-        return float(price_without_tax.replace(",", "."))
-
-    def get_ticket_type_and_expiration(self, soup):
-        match = re.search("\d\d\.\d\d\.\d\d\d\d(.+)(\d\d\.\d\d\.\d\d\d\d)", soup.text).groups()
-        if not match:
-            abort(422)
-        return match
-
     @auth.login_required
     def post(self):
         def is_square(fn):
-            with open(fn, 'rb') as fd:
-                head = fd.read(24)
+            with open(fn, 'rb') as handle:
+                head = handle.read(24)
                 width, height = struct.unpack('>ii', head[16:24])
                 if int(width) == int(height):
                     return True
@@ -106,41 +117,40 @@ class UploadView(Resource):
             # Danger Zone, parsing PDF files is dirty and this one definately ain't
             # the prettiest creature alive. Cleanse yourself with strong liqueur
             # afterwards.
-            os.popen('pdfimages -png ' + tmp_src_file + ' ' + tmp_dir + '/out')
+            os.popen('pdfimages -png ' + tmp_src_file + ' ' + tmp_dir + '/out').read()
             ims = os.popen("ls " + tmp_dir + "/out*.png").read().split()
             qr_codes = [fn for fn in ims if is_square(fn)]
-            os.popen("pdfseparate " + tmp_src_file + ' ' + tmp_dir + "/pdfout-%d.pdf")
+            os.popen("pdfseparate " + tmp_src_file + ' ' + tmp_dir + "/pdfout-%d.pdf").read()
             pdfs = os.popen("ls " + tmp_dir + "/pdfout-*.pdf").read().split()
             pdf_files = [fn for fn in pdfs]
-        except:
-            print("XXX: No poppler installed, unable to produce 2D barcodes")
+        except Exception:
+            logging.warning("XXX: No poppler installed, unable to produce 2D barcodes")
 
-        if len(qr_codes) != len(pdf_files) != len(pages):
+        if len(qr_codes) != len(pdf_files):
             return {"message": "Invalid ticket file"}, 400
 
         tickets = []
         for qr_code, pdf_file in iter(zip(qr_codes, pdf_files)):
-            pages = self.get_pages(pdf_file)
+            pages = get_pages(pdf_file)
             if not pages:
                 return {"message": "Could not parse the uploaded file, is this actually the PDF file with tickets?"}, 422
             page = pages[0]
-            ticket_count = mongo.db.tickets.find({"order_id": self.get_order_id(page)}).count()
+            ticket_count = mongo.db.tickets.find({"order_id": get_order_id(page)}).count()
             if ticket_count:
                 return {"message": "Ticket already uploaded"}, 400
-            route = self.get_route(page)
-            ticket_type, expires = self.get_ticket_type_and_expiration(page)
-            qr_base64 = self.base64_encode(qr_code)
-            pdf_base64 = self.base64_encode(pdf_file)
+            route = get_route(page)
+            ticket_type, expires = get_ticket_type_and_expiration(page)
+            qr_base64 = base64_encode(qr_code)
+            pdf_base64 = base64_encode(pdf_file)
             tickets.append({
-                'ticket_id': uuid.uuid4().hex,
                 'src': route[0].upper(),
                 'dest': route[1].upper(),
-                'qr': 'data:image/png;base64,' + qr_base64,
-                'pdf': 'data:application/pdf;base64,' + pdf_base64,
-                'order_id': self.get_order_id(page),
-                'price': self.get_price(page) / len(pages),
+                'qr': 'data:image/png;base64,' + str(qr_base64, 'utf-8'),
+                'pdf': 'data:application/pdf;base64,' + str(pdf_base64, 'utf-8'),
+                'order_id': get_order_id(page),
+                'price': get_price(page) / len(pages),
                 'ticket_type': ticket_type,
-                'ticket_id': self.get_ticket_id(page),
+                'ticket_id': get_ticket_id(page),
                 'expiration_date': arrow.get(expires, 'DD.MM.YYYY').to('Europe/Helsinki').ceil('day').datetime,
                 'ticket_uploaded': arrow.utcnow().to('Europe/Helsinki').datetime,
                 'ticket_uploaded_by': g.current_user,

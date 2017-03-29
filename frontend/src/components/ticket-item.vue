@@ -5,7 +5,7 @@
     Voimassa: <span>{{ formatDate(ticket.expiration_date) }}</span><br />
     Hinta: <span>{{ ticket.price }} &euro; (alv 0%)</span><br />
     <span>{{ ticket.vr_id }}</span>
-    <a download="biljet.pdf" v-bind:href="ticket.pdf" title="Download pdf">pdf</a>
+    <a v-if="ticket.pdf" download="biljet.pdf" v-bind:href="ticket.pdf" title="Download pdf">pdf</a>
     <br />
     <p>
       <img v-bind:src="ticket.qr" />

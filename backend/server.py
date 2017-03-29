@@ -11,10 +11,10 @@ api_root = '/api/v1'
 api.add_resource(RouteList, api_root + '/routes')
 api.add_resource(RouteView, api_root + '/routes/<string:id>')
 api.add_resource(RouteImageView, api_root + '/qr/<string:id>.png')
+api.add_resource(RouteSummaryList, api_root + '/routesummary')
 api.add_resource(UploadView, api_root + '/upload')
 api.add_resource(SessionView, api_root + '/login')
 api.add_resource(MyTicketsList, api_root + '/mytickets')
-api.add_resource(RouteSummaryList, api_root + '/routesummary')
 api.add_resource(SlackAuthorizedView, api_root + '/slack/activate')
 api.add_resource(SlackIntegrationView, api_root + '/slack/action')
 

@@ -8,9 +8,9 @@ import arrow
 from common import InvalidUsage, auth
 from app import mongo
 import base64
-import StringIO
+import io
 
-ticket = {
+ticket_fields = {
     'id': fields.String(attribute='_id'),
     'src': fields.String,
     'dest': fields.String,
@@ -26,7 +26,7 @@ ticket = {
 }
 
 route_fields = {
-    'tickets': fields.List(fields.Nested(ticket))
+    'tickets': fields.List(fields.Nested(ticket_fields))
 }
 
 route_summary_fields = {
@@ -43,7 +43,8 @@ class RouteSummaryList(Resource):
     @marshal_with(route_summary_fields)
     def get(self):
         reducer = Code("""function(obj, prev){prev.count++;}""")
-        return mongo.db.tickets.group(key={"src": 1, "dest": 1}, condition={"reserved": None}, initial={"count": 0}, reduce=reducer)
+        return mongo.db.tickets.group(key={"src": 1, "dest": 1}, condition={"reserved": None}, initial={"count": 0},
+                                      reduce=reducer)
 
 
 class RouteList(Resource):
@@ -52,32 +53,32 @@ class RouteList(Resource):
     def get(self):
         src = request.args.get('src')
         dest = request.args.get('dest')
-        type = request.args.get('type')
+        ticket_type = request.args.get('type')
         if not src or not dest:
             return
 
         now = datetime.now()
         query = {
             '$or': [
-            {
-                'src': src.upper(),
-                'dest': dest.upper(),
-                'reserved': None,
-                'used': None,
-                'expiration_date': {'$gt': now}
-            },
-            {
-                'src': dest.upper(),
-                'dest': src.upper(),
-                'reserved': None,
-                'used': None,
-                'expiration_date': {'$gt': now}
-            }
-        ]}
+                {
+                    'src': src.upper(),
+                    'dest': dest.upper(),
+                    'reserved': None,
+                    'used': None,
+                    'expiration_date': {'$gt': now}
+                },
+                {
+                    'src': dest.upper(),
+                    'dest': src.upper(),
+                    'reserved': None,
+                    'used': None,
+                    'expiration_date': {'$gt': now}
+                }
+            ]}
 
         ticket_types = {'EKO': '2.lk', 'EKSTRA': '1.lk'}
-        if type and type in ticket_types.keys():
-            query['ticket_type'] = {'$regex': ticket_types[type]}
+        if ticket_type and ticket_type in list(ticket_types.keys()):
+            query['ticket_type'] = {'$regex': ticket_types[ticket_type]}
         available_tickets = mongo.db.tickets.find_one(query, sort=[('expiration_date', pymongo.ASCENDING)])
         return {'tickets': available_tickets}
 
@@ -124,10 +125,9 @@ def update_ticket(id, data, current_user=None):
     }, {
         '$set': update_fields,
     })
-    print result.matched_count
     if result.matched_count < 1:
         abort(400)
-    return (204)
+    return 204
 
 
 class RouteView(Resource):
@@ -144,7 +144,7 @@ class RouteImageView(Resource):
         })
         if not ticket:
             abort(404)
-        img_bin = StringIO.StringIO()
-        img_bin.write(base64.decodestring(ticket['qr'].split("data:image/png;base64,")[1]))
+        img_bin = io.StringIO()
+        img_bin.write(base64.decodebytes(ticket['qr'].split("data:image/png;base64,")[1]))
         img_bin.seek(0)
         return send_file(img_bin, attachment_filename="qr.png")

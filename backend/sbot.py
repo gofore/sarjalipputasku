@@ -2,9 +2,11 @@ from slackbot.bot import Bot
 from slackbot.bot import respond_to, default_reply
 import re
 import json
-from app import app
-from views.sessions import SessionView
 import requests
+
+from .app import app
+from .views.sessions import SessionView
+
 
 BASE_URL = app.config.get('BASE_URL', 'http://localhost:5000')
 
@@ -44,14 +46,18 @@ def tickets(email, message):
     message.reply('\n'.join(['%s-%s (%s kpl)' % (x['src'], x['dest'], x['count']) for x in resp.json()]))
 
 
-@respond_to(r'ticket (\S+) (\S+) (EKO|EKSTRA|)', re.IGNORECASE)
+@respond_to(r'ticket (\S+) (\S+)\W*(EKO|EKSTRA|)', re.IGNORECASE)
 @identified_user()
 def ticket(email, message, src, dest, type=None):
     email = message._client.users.get(message.body["user"]).get('profile', {}).get('email')
     s = SessionView()
     token = s.token_with_email(email)['token']
-    resp = requests.get(BASE_URL + '/api/v1/routes?src=%s&dest=%s&type=%s' % (src, dest, type),
-                        headers={'Authorization': 'Bearer %s' % token})
+
+    url = BASE_URL + '/api/v1/routes?src=%s&dest=%s' % (src, dest)
+    if type:
+        url = url + '&type=%s' % type
+
+    resp = requests.get(url, headers={'Authorization': 'Bearer %s' % token})
     if resp.status_code != 200:
         message.reply("Error in ticket search")
         return

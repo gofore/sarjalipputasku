@@ -1,4 +1,4 @@
-from app import app, mongo
+from .app import app, mongo
 
 
 def get_api_token():
