@@ -148,7 +148,7 @@ class UploadView(Resource):
                 'qr': 'data:image/png;base64,' + str(qr_base64, 'utf-8'),
                 'pdf': 'data:application/pdf;base64,' + str(pdf_base64, 'utf-8'),
                 'order_id': get_order_id(page),
-                'price': get_price(page) / len(pages),
+                'price': get_price(page) / len(pdf_files),
                 'ticket_type': ticket_type,
                 'ticket_id': get_ticket_id(page),
                 'expiration_date': arrow.get(expires, 'DD.MM.YYYY').to('Europe/Helsinki').ceil('day').datetime,
