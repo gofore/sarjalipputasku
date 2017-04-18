@@ -41,6 +41,11 @@ def get_html_soup(page):
     outfp.close()
     return soup
 
+def get_ticket_count_from_order(soup):
+    count = re.search('Lippu: \d+ / (\d+)', soup.text)
+    if not count:
+        abort(422)
+    return int(count.groups()[0])
 
 def get_order_id(soup):
     order_id = re.search("Tilausnumero:\W+(\d+)", soup.text)
@@ -138,6 +143,8 @@ class UploadView(Resource):
             ticket_count = mongo.db.tickets.find({"order_id": get_order_id(page)}).count()
             if ticket_count:
                 return {"message": "Ticket already uploaded"}, 400
+            ticket_count_for_order = get_ticket_count_from_order(page)
+
             route = get_route(page)
             ticket_type, expires = get_ticket_type_and_expiration(page)
             qr_base64 = base64_encode(qr_code)
@@ -148,7 +155,7 @@ class UploadView(Resource):
                 'qr': 'data:image/png;base64,' + str(qr_base64, 'utf-8'),
                 'pdf': 'data:application/pdf;base64,' + str(pdf_base64, 'utf-8'),
                 'order_id': get_order_id(page),
-                'price': get_price(page) / len(pdf_files),
+                'price': get_price(page) / ticket_count_for_order,
                 'ticket_type': ticket_type,
                 'ticket_id': get_ticket_id(page),
                 'expiration_date': arrow.get(expires, 'DD.MM.YYYY').to('Europe/Helsinki').ceil('day').datetime,
