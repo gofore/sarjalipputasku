@@ -144,7 +144,9 @@ class RouteImageView(Resource):
         })
         if not ticket:
             abort(404)
-        img_bin = io.StringIO()
-        img_bin.write(base64.decodebytes(ticket['qr'].split("data:image/png;base64,")[1]))
+        img_bin = io.BytesIO()
+        cbytes = ticket['qr'].split("data:image/png;base64,")[1]
+        ebytes = base64.decodebytes(bytes(cbytes, 'utf-8'))
+        img_bin.write(ebytes)
         img_bin.seek(0)
         return send_file(img_bin, attachment_filename="qr.png")
