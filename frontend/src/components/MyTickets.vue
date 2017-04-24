@@ -5,7 +5,7 @@
         <img v-bind:src="ticket.qr" />
       </div>
       <div class="col-md-4">
-        <span>{{ ticket.src }} - {{ ticket.dest }}</span><br />
+        <span>{{ ticket.src }} - {{ ticket.dest }} ({{ ticket.ticket_type }})</span><br />
         Varattu: <span>{{ formatDate(ticket.reserved) }}</span><br />
         Hinta: <span>{{ ticket.price }} &euro; (alv 0%)</span><br />
         <span>{{ ticket.order_id }} - {{ ticket.vr_id }} -

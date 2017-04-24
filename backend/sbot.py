@@ -75,12 +75,16 @@ def ticket(email, message, src, dest, type=None):
             "value": ticket['vr_id'],
             "short": True
         }, {
-            "title": "Price",
+            "title": "Price (VAT0%)",
             "value": ticket['price'],
             "short": True,
         }, {
             "title": "Order ID",
             "value": ticket['order_id'],
+            "short": True
+        }, {
+            "title": "Ticket class",
+            "value": ticket['ticket_type'],
             "short": True
         }, {
             "title": "User",
@@ -105,7 +109,7 @@ def ticket(email, message, src, dest, type=None):
 def my_default_hanlder(message):
     message.reply('''Beep! Ask me following\n
 \t- "tickets" - to list available tickets
-\t- "ticket tampere helsinki" - to query tickets for a route (e.g. tampere & helsinki)
+\t- "ticket tampere helsinki (EKO|EKSTRA)" - to query tickets for a route (e.g. tampere & helsinki), optionally pass EKO or EKSTRA to query specific ticket class
 \t- "login" - to get a direct login link into Sarjalipputasku web interface
 ''')
 
