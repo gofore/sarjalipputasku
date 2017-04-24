@@ -58,6 +58,9 @@ class RouteList(Resource):
         if not src or not dest:
             return
 
+        if ticket_type:
+            ticket_type = ticket_type.upper()
+
         now = datetime.now()
         query = {
             '$or': [
