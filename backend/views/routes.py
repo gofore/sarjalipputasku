@@ -32,6 +32,7 @@ route_fields = {
 route_summary_fields = {
     'src': fields.String,
     'dest': fields.String,
+    'ticket_type': fields.String,
     'count': fields.Integer
 }
 
@@ -43,7 +44,7 @@ class RouteSummaryList(Resource):
     @marshal_with(route_summary_fields)
     def get(self):
         reducer = Code("""function(obj, prev){prev.count++;}""")
-        return mongo.db.tickets.group(key={"src": 1, "dest": 1}, condition={"reserved": None}, initial={"count": 0},
+        return mongo.db.tickets.group(key={"src": 1, "dest": 1, "ticket_type": 1}, condition={"reserved": None}, initial={"count": 0},
                                       reduce=reducer)
 
 

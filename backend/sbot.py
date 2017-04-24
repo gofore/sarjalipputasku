@@ -43,7 +43,7 @@ def tickets(email, message):
     if resp.status_code != 200:
         message.reply("Error in ticket search")
         return
-    message.reply('\n'.join(['%s-%s (%s kpl)' % (x['src'], x['dest'], x['count']) for x in resp.json()]))
+    message.reply('\n'.join(['%s-%s %s (%s kpl)' % (x['src'], x['dest'], x['ticket_type'], x['count']) for x in resp.json()]))
 
 
 @respond_to(r'ticket (\S+) (\S+)\W*(EKO|EKSTRA|)', re.IGNORECASE)
