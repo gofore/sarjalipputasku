@@ -4,8 +4,8 @@ import re
 import json
 import requests
 
-from .app import app
-from .views.sessions import SessionView
+from app import app
+from views.sessions import SessionView
 
 
 BASE_URL = app.config.get('BASE_URL', 'http://localhost:5000')
