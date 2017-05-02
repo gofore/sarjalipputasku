@@ -5,8 +5,7 @@ ENV SARJALIPPUTASKU_CONFIG_DIR $SARJALIPPUTASKU_DIR/config
 ENV SARJALIPPUTASKU_CONFIGFILE $SARJALIPPUTASKU_CONFIG_DIR/app.cfg
 ENV SARJALIPPUTASKU_SOURCE_DIR $SARJALIPPUTASKU_DIR/source
 ENV PYTHONUNBUFFERED 1
-RUN apt-get update
-RUN apt-get install -y libldap2-dev libsasl2-dev poppler-utils
+RUN apt-get update && apt-get install -y libldap2-dev libsasl2-dev poppler-utils
 RUN mkdir -p $SARJALIPPUTASKU_SOURCE_DIR
 ADD backend $SARJALIPPUTASKU_SOURCE_DIR
 ADD frontend $SARJALIPPUTASKU_SOURCE_DIR/static
