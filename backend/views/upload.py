@@ -62,7 +62,7 @@ def get_route(soup):
 
 
 def get_ticket_id(soup):
-    ticket_id = re.search("- (.+) -", soup.text)
+    ticket_id = re.search("- (.+=)", soup.text)
     if not ticket_id:
         abort(422)
     return ticket_id.groups()[0].strip()
