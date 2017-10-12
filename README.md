@@ -1,4 +1,6 @@
-# sarjalipputasku
+# Projekti on vanhentunut, kesällä 2017 VR:n lippu-uudistuksen myötä QR-koodeja sisältäviä sarjalippuja ei enää myydä
+
+# Sarjalipputasku
 Matkalipputasku VR:n sarjalipuille
 
 
